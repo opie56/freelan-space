@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'design.dart';
 import 'home_slides.dart';
+import 'getting_started.dart';
 import 'user_saved_login.dart';
 import 'delete_account.dart';
 import 'user_theme.dart';
@@ -31,6 +32,7 @@ import 'secure_transport.dart';
 import 'password_policy.dart';
 import 'auth_captcha.dart';
 import 'auth_languages.dart';
+import 'auth_invitation.dart';
 import 'user_localization.dart';
 import 'official_social_links.dart';
 
@@ -1715,21 +1717,69 @@ class _AuthScreenState extends State<AuthScreen> {
                           height: 1.4,
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      Container(
+                        key: const Key('signup_referral_hint'),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xfff2edff),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              uf(
+                                context,
+                                'Have a code from a friend?',
+                                'സുഹൃത്തിന്റെ code ഉണ്ടോ?',
+                              ),
+                              style: const TextStyle(
+                                color: growthInk,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              uf(
+                                context,
+                                'After signing in, open Profile, choose Referral program, then tap Enter a referral code.',
+                                'Sign in ചെയ്ത ശേഷം Profile തുറന്ന് Referral പദ്ധതി തിരഞ്ഞെടുക്കുക. തുടർന്ന് Referral കോഡ് നൽകുക എന്നതിൽ code നൽകുക.',
+                              ),
+                              style: const TextStyle(
+                                color: Color(0xff5f5d6c),
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       const LegalLinks(),
                     ],
                     const SizedBox(height: 24),
-                    TextButton(
-                      onPressed: busy
-                          ? null
-                          : () => setState(() {
-                              registering = !registering;
-                              password.clear();
-                              showPassword = false;
-                            }),
-                      child: Text(
-                        tr(context, registering ? 'haveAccount' : 'noAccount'),
+                    if (registering)
+                      TextButton(
+                        onPressed: busy
+                            ? null
+                            : () => setState(() {
+                                registering = false;
+                                password.clear();
+                                showPassword = false;
+                              }),
+                        child: Text(tr(context, 'haveAccount')),
+                      )
+                    else
+                      AuthInvitation(
+                        title: tr(context, 'noAccount'),
+                        onTap: busy
+                            ? null
+                            : () => setState(() {
+                                registering = true;
+                                password.clear();
+                                showPassword = false;
+                              }),
                       ),
-                    ),
                     if (registering)
                       TextButton(
                         onPressed: busy
@@ -2329,6 +2379,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         onBrowse: () => setState(() {
           selected = 1;
         }),
+        onCampaigns: () => setState(() {
+          selected = 2;
+        }),
         onBrowseType: (type) => Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (_) => TaskCategoryPage(uid: widget.user.id, type: type),
@@ -2458,12 +2511,13 @@ class Dashboard extends StatelessWidget {
     this.onBrowseType,
     this.slideshowGateway,
     this.onReferrals,
+    this.onCampaigns,
   });
   final Stream<List<Map<String, dynamic>>>? balanceStream;
   final Stream<List<Map<String, dynamic>>>? historyStream;
   final ValueChanged<String>? onBrowseType;
   final VoidCallback onBrowse;
-  final VoidCallback? onReferrals;
+  final VoidCallback? onReferrals, onCampaigns;
   final HomeSlidesGateway? slideshowGateway;
   final String uid;
   @override
@@ -2481,7 +2535,8 @@ class Dashboard extends StatelessWidget {
         onReferral: onReferrals,
         onEarnings: onBrowse,
       ),
-      const SizedBox(height: 26),
+      GettingStarted(onBrowse: onBrowse, onCampaigns: onCampaigns),
+      const SizedBox(height: 14),
       Text(
         tr(context, 'welcome'),
         style: const TextStyle(
@@ -5593,7 +5648,10 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
   void reload() => setState(() {
     data = gateway.load(widget.user.id);
   });
-  Future<void> openDetails(bool accounts) async {
+  Future<void> openDetails(
+    bool accounts, {
+    ReferralSection referralSection = ReferralSection.menu,
+  }) async {
     await Navigator.push(
       context,
       MaterialPageRoute<void>(
@@ -5601,6 +5659,7 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
           uid: widget.user.id,
           gateway: gateway,
           accounts: accounts,
+          referralSection: referralSection,
           authorizeChange: widget.authorizeChange,
         ),
       ),
@@ -5682,6 +5741,8 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
             : () => Future.error(StateError('Campaign limits unavailable')),
         onAccounts: () => openDetails(true),
         onReferrals: () => openDetails(false),
+        onCampaignReferrals: () =>
+            openDetails(false, referralSection: ReferralSection.code),
         onPin: details.hasData ? () => openPin(details.data!.pinSet) : null,
         onSignOut: signOut,
         onLanguage: toggleLanguage,
@@ -5710,8 +5771,10 @@ class ProfileLayout extends StatelessWidget {
     this.onNotifications,
     this.notifications,
     this.loadCampaignPlan,
+    this.onCampaignReferrals,
   });
   final Future<CampaignPlan> Function()? loadCampaignPlan;
+  final Future<void> Function()? onCampaignReferrals;
   final VoidCallback? onNotifications;
   final Stream<List<Map<String, dynamic>>>? notifications;
   final User user;
@@ -6004,6 +6067,7 @@ class ProfileLayout extends StatelessWidget {
                               context,
                               MaterialPageRoute<void>(
                                 builder: (_) => CampaignLimitsPage(
+                                  onOpenReferrals: onCampaignReferrals,
                                   loadPlan:
                                       loadCampaignPlan ??
                                       () => Future.error(
@@ -6233,8 +6297,10 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
         return;
       }
       final text =
+          '${uf(context, 'Join me on Freelan Space! Use my referral code below.', 'Freelan Space-ൽ ചേരൂ! താഴെയുള്ള എന്റെ referral code ഉപയോഗിക്കൂ.')}\n\n'
           '${tr(context, 'referralCode')}: $code\n'
-          '${tr(context, 'referralDownload')}: $url';
+          '${tr(context, 'referralDownload')}: $url\n\n'
+          '${uf(context, 'After signing in, open Profile, choose Referral program, then tap Enter a referral code.', 'Sign in ചെയ്ത ശേഷം Profile തുറന്ന് Referral പദ്ധതി തിരഞ്ഞെടുക്കുക. തുടർന്ന് Referral കോഡ് നൽകുക എന്നതിൽ code നൽകുക.')}';
       if (widget.shareReferral != null) {
         await widget.shareReferral!(text);
       } else {

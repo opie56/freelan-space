@@ -68,6 +68,17 @@ void main() {
         await tester.ensureVisible(find.text(signup));
         await tester.tap(find.text(signup));
         await tester.pumpAndSettle();
+        expect(find.byKey(const Key('signup_referral_hint')), findsOneWidget);
+        expect(
+          find.text(
+            translated(
+              locale,
+              'After signing in, open Profile, choose Referral program, then tap Enter a referral code.',
+              'Sign in ചെയ്ത ശേഷം Profile തുറന്ന് Referral പദ്ധതി തിരഞ്ഞെടുക്കുക. തുടർന്ന് Referral കോഡ് നൽകുക എന്നതിൽ code നൽകുക.',
+            ),
+          ),
+          findsOneWidget,
+        );
         await tester.enterText(
           find.byKey(const Key('email')),
           'person@example.test',

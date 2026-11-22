@@ -4,6 +4,26 @@
 // Reviewed overrides cover payment confirmations and common wallet terms.
 const Map<String, Map<String, String>> userTranslations = {
   "hi": {
+    "Earn coins from approved tasks and use them for campaigns.":
+        "स्वीकृत कार्यों से कॉइन कमाएँ और उन्हें अभियानों में इस्तेमाल करें।",
+    "Create a campaign": "अभियान बनाएँ",
+    "How the app works": "ऐप कैसे काम करता है",
+    "Getting started": "शुरू करें",
+    "Find a task": "कार्य खोजें",
+    "Browse the tasks available to you.": "अपने लिए उपलब्ध कार्य देखें।",
+    "Complete a task and submit the requested details. Coins are awarded after approval.": "कार्य पूरा करें और मांगी गई जानकारी भेजें। स्वीकृति के बाद कॉइन मिलते हैं।",
+    "Use available coins to create a campaign. The required coins are reserved.": "अभियान बनाने के लिए उपलब्ध कॉइन इस्तेमाल करें। आवश्यक कॉइन आरक्षित किए जाते हैं।",
+    "View campaigns": "अभियान देखें",
+    "Join me on Freelan Space! Use my referral code below.":
+        "Freelan Space पर मेरे साथ जुड़ें! नीचे मेरा रेफ़रल कोड इस्तेमाल करें।",
+    "After signing in, open Profile, choose Referral program, then tap Enter a referral code.": "साइन इन करने के बाद प्रोफ़ाइल खोलें, रेफरल कार्यक्रम चुनें और एक रेफरल कोड दर्ज करें पर टैप करें।",
+    "Your current task limit": "आपकी वर्तमान कार्य सीमा",
+    "tasks per campaign": "प्रति अभियान कार्य",
+    "Referral bonus unlocked": "रेफ़रल बोनस मिल गया",
+    "Invite a friend to unlock more tasks":
+        "अधिक कार्य पाने के लिए मित्र को आमंत्रित करें",
+    "Share your code. Your first successful referral unlocks extra tasks for every campaign.": "अपना कोड साझा करें। पहला सफल रेफ़रल हर अभियान में अतिरिक्त कार्य देता है।",
+    "Additional referrals do not add more tasks. Standard coin charges apply.": "अतिरिक्त रेफ़रल से और कार्य नहीं मिलते। सामान्य कॉइन शुल्क लागू होते हैं।",
     "Your community": "आपका समुदाय",
     "Your referral tools": "आपके रेफ़रल विकल्प",
     "Everything you need to get started.":
@@ -589,6 +609,25 @@ const Map<String, Map<String, String>> userTranslations = {
     "you@example.com": "you@example.com",
   },
   "ta": {
+    "Earn coins from approved tasks and use them for campaigns.": "அங்கீகரிக்கப்பட்ட பணிகளில் நாணயங்களைப் பெற்று அவற்றைப் பிரச்சாரங்களுக்குப் பயன்படுத்துங்கள்.",
+    "Create a campaign": "பிரச்சாரத்தை உருவாக்கவும்",
+    "How the app works": "செயலி எவ்வாறு செயல்படுகிறது",
+    "Getting started": "தொடங்கலாம்",
+    "Find a task": "ஒரு பணியைக் கண்டறியுங்கள்",
+    "Browse the tasks available to you.":
+        "உங்களுக்குக் கிடைக்கும் பணிகளைப் பாருங்கள்.",
+    "Complete a task and submit the requested details. Coins are awarded after approval.": "பணியை முடித்து, கோரப்பட்ட விவரங்களைச் சமர்ப்பிக்கவும். ஒப்புதலுக்குப் பிறகு நாணயங்கள் வழங்கப்படும்.",
+    "Use available coins to create a campaign. The required coins are reserved.": "கிடைக்கும் நாணயங்களைப் பயன்படுத்தி பிரச்சாரத்தை உருவாக்குங்கள். தேவையான நாணயங்கள் ஒதுக்கப்படும்.",
+    "View campaigns": "பிரச்சாரங்களைக் காண்க",
+    "Join me on Freelan Space! Use my referral code below.": "Freelan Space-ல் என்னுடன் சேருங்கள்! கீழே உள்ள எனது பரிந்துரை குறியீட்டைப் பயன்படுத்துங்கள்.",
+    "After signing in, open Profile, choose Referral program, then tap Enter a referral code.": "உள்நுழைந்த பிறகு சுயவிவரத்தைத் திறந்து, பரிந்துரை நிரலைத் தேர்ந்தெடுத்து, பரிந்துரை குறியீட்டை உள்ளிடவும் என்பதைத் தட்டுங்கள்.",
+    "Your current task limit": "உங்கள் தற்போதைய பணி வரம்பு",
+    "tasks per campaign": "ஒரு பிரச்சாரத்திற்கான பணிகள்",
+    "Referral bonus unlocked": "பரிந்துரை போனஸ் கிடைத்தது",
+    "Invite a friend to unlock more tasks":
+        "கூடுதல் பணிகளுக்கு நண்பரை அழைக்கவும்",
+    "Share your code. Your first successful referral unlocks extra tasks for every campaign.": "உங்கள் குறியீட்டைப் பகிருங்கள். முதல் வெற்றிகரமான பரிந்துரை ஒவ்வொரு பிரச்சாரத்திலும் கூடுதல் பணிகளை வழங்கும்.",
+    "Additional referrals do not add more tasks. Standard coin charges apply.": "மேலும் பரிந்துரைப்பதால் கூடுதல் பணிகள் கிடைக்காது. வழக்கமான நாணயக் கட்டணம் பொருந்தும்.",
     "Your community": "உங்கள் சமூகம்",
     "Your referral tools": "உங்கள் பரிந்துரை கருவிகள்",
     "Everything you need to get started.": "தொடங்கத் தேவையான அனைத்தும்.",
@@ -1172,6 +1211,30 @@ const Map<String, Map<String, String>> userTranslations = {
     "you@example.com": "you@example.com",
   },
   "ar": {
+    "Earn coins from approved tasks and use them for campaigns.":
+        "اكسب عملات من المهام المعتمدة واستخدمها في الحملات.",
+    "Create a campaign": "إنشاء حملة",
+    "How the app works": "كيف يعمل التطبيق",
+    "Getting started": "البدء",
+    "Find a task": "اعثر على مهمة",
+    "Browse the tasks available to you.": "تصفح المهام المتاحة لك.",
+    "Complete a task and submit the requested details. Coins are awarded after approval.":
+        "أكمل المهمة وأرسل التفاصيل المطلوبة. تُمنح العملات بعد الموافقة.",
+    "Use available coins to create a campaign. The required coins are reserved.":
+        "استخدم العملات المتاحة لإنشاء حملة. تُحجز العملات المطلوبة.",
+    "View campaigns": "عرض الحملات",
+    "Join me on Freelan Space! Use my referral code below.":
+        "انضم إليّ في Freelan Space! استخدم رمز الإحالة الخاص بي أدناه.",
+    "After signing in, open Profile, choose Referral program, then tap Enter a referral code.": "بعد تسجيل الدخول، افتح الملف الشخصي واختر برنامج الإحالة، ثم اضغط على أدخل رمز الإحالة.",
+    "Your current task limit": "حد المهام الحالي",
+    "tasks per campaign": "مهام لكل حملة",
+    "Referral bonus unlocked": "تم تفعيل مكافأة الإحالة",
+    "Invite a friend to unlock more tasks":
+        "ادعُ صديقاً للحصول على مهام إضافية",
+    "Share your code. Your first successful referral unlocks extra tasks for every campaign.":
+        "شارك رمزك. تمنحك أول إحالة ناجحة مهام إضافية لكل حملة.",
+    "Additional referrals do not add more tasks. Standard coin charges apply.":
+        "لا تضيف الإحالات الأخرى مهام إضافية. تطبق رسوم العملات المعتادة.",
     "Your community": "مجتمعك",
     "Your referral tools": "أدوات الإحالة",
     "Everything you need to get started.": "كل ما تحتاجه للبدء.",
