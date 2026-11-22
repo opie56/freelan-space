@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'user_localization.dart';
+import 'referral_design.dart';
+import 'design.dart';
+import 'user_tokens.dart';
 import 'user_page_canvas.dart';
 
 class ReferralHistoryEntry {
@@ -44,96 +47,233 @@ class _ReferralHistoryPageState extends State<ReferralHistoryPage> {
     appBar: AppBar(
       title: Text(userText(context, 'Referral History', 'Referral ചരിത്രം')),
     ),
-    body: FutureBuilder<List<ReferralHistoryEntry>>(
-      future: data,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+    body: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: FutureBuilder<List<ReferralHistoryEntry>>(
+          future: data,
+          builder: (context, snapshot) {
+            final dates = MaterialLocalizations.of(context);
+            final entries = snapshot.data ?? [];
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 32),
               children: [
-                Text(
-                  userText(
+                ReferralHeader(
+                  eyebrow: userText(
                     context,
-                    'Unable to load referral history.',
-                    'Referral ചരിത്രം ലഭ്യമല്ല.',
+                    'Your connections',
+                    'നിങ്ങളുടെ ബന്ധങ്ങൾ',
                   ),
-                ),
-                TextButton(
-                  onPressed: () => page(offset),
-                  child: Text(userText(context, 'Retry', 'വീണ്ടും ശ്രമിക്കുക')),
-                ),
-              ],
-            ),
-          );
-        }
-        final entries = snapshot.data!;
-        final dates = MaterialLocalizations.of(context);
-        return ListView(
-          padding: const EdgeInsets.all(14),
-          children: [
-            if (entries.isEmpty)
-              Text(
-                userText(
-                  context,
-                  'No referrals on this page.',
-                  'ഈ പേജിൽ referrals ഇല്ല.',
-                ),
-              ),
-            for (final entry in entries)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.person_outline),
-                  title: Text(
-                    entry.name ??
-                        userText(context, 'Name unavailable', 'പേര് ലഭ്യമല്ല'),
+                  title: userText(
+                    context,
+                    'Referral History',
+                    'Referral ചരിത്രം',
                   ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (entry.email != null)
-                        Text(entry.email!, textDirection: TextDirection.ltr),
-                      Text(
-                        entry.referred
-                            ? userText(
-                                context,
-                                'Used your code',
-                                'നിങ്ങളുടെ code ഉപയോഗിച്ചു',
-                              )
-                            : userText(
-                                context,
-                                'Referred you',
-                                'നിങ്ങളെ refer ചെയ്തു',
-                              ),
-                      ),
-                      Text(dates.formatMediumDate(entry.date)),
-                    ],
+                  description: userText(
+                    context,
+                    'See the people connected through your referral codes.',
+                    'Referral code വഴി ബന്ധമുള്ളവരെ കാണാം.',
                   ),
+                  icon: Icons.history_rounded,
                 ),
-              ),
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              children: [
-                if (offset > 0)
-                  TextButton(
-                    onPressed: () => page(offset - pageSize),
-                    child: Text(
-                      userText(context, 'Previous', 'മുമ്പത്തെ പേജ്'),
+                const SizedBox(height: 24),
+                if (snapshot.connectionState != ConnectionState.done)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else if (snapshot.hasError)
+                  ReferralSurface(
+                    child: Column(
+                      children: [
+                        const Icon(
+                          Icons.cloud_off_outlined,
+                          size: 32,
+                          color: userMuted,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          userText(
+                            context,
+                            'Unable to load referral history.',
+                            'Referral ചരിത്രം ലഭ്യമല്ല.',
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        TextButton(
+                          onPressed: () => page(offset),
+                          child: Text(
+                            userText(context, 'Retry', 'വീണ്ടും ശ്രമിക്കുക'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (entries.isEmpty)
+                  ReferralSurface(
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 58,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            color: const Color(0xffeff8f5),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(
+                            Icons.people_outline_rounded,
+                            color: userTeal,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          userText(
+                            context,
+                            'No referrals on this page.',
+                            'ഈ പേജിൽ referrals ഇല്ല.',
+                          ),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: growthInk,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else ...[
+                  Text(
+                    userText(
+                      context,
+                      'Referral connections',
+                      'Referral ബന്ധങ്ങൾ',
+                    ),
+                    style: const TextStyle(
+                      color: growthInk,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                if (entries.length == pageSize)
-                  TextButton(
-                    onPressed: () => page(offset + pageSize),
-                    child: Text(userText(context, 'Next', 'അടുത്ത പേജ്')),
+                  const SizedBox(height: 4),
+                  Text(
+                    userText(
+                      context,
+                      'Names and emails are masked for privacy.',
+                      'സ്വകാര്യതയ്ക്കായി പേരും email-ഉം മറച്ചിരിക്കുന്നു.',
+                    ),
+                    style: const TextStyle(color: userMuted, fontSize: 11),
+                  ),
+                  const SizedBox(height: 14),
+                  for (final entry in entries) ...[
+                    ReferralSurface(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 46,
+                            height: 46,
+                            decoration: BoxDecoration(
+                              color: entry.referred
+                                  ? const Color(0xffeaf7f3)
+                                  : const Color(0xfff2edff),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(
+                              entry.referred
+                                  ? Icons.person_add_alt_1_rounded
+                                  : Icons.person_outline_rounded,
+                              color: entry.referred ? userTeal : growthPurple,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  entry.name ??
+                                      userText(
+                                        context,
+                                        'Name unavailable',
+                                        'പേര് ലഭ്യമല്ല',
+                                      ),
+                                  style: const TextStyle(
+                                    color: growthInk,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                if (entry.email != null)
+                                  Text(
+                                    entry.email!,
+                                    textDirection: TextDirection.ltr,
+                                    style: const TextStyle(
+                                      color: userMuted,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  entry.referred
+                                      ? userText(
+                                          context,
+                                          'Used your code',
+                                          'നിങ്ങളുടെ code ഉപയോഗിച്ചു',
+                                        )
+                                      : userText(
+                                          context,
+                                          'Referred you',
+                                          'നിങ്ങളെ refer ചെയ്തു',
+                                        ),
+                                  style: TextStyle(
+                                    color: entry.referred
+                                        ? userTeal
+                                        : growthPurple,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                Text(
+                                  dates.formatMediumDate(entry.date),
+                                  style: const TextStyle(
+                                    color: userMuted,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ],
+                if (offset > 0 || entries.length == pageSize)
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    children: [
+                      if (offset > 0)
+                        TextButton(
+                          onPressed: () => page(offset - pageSize),
+                          child: Text(
+                            userText(context, 'Previous', 'മുമ്പത്തെ പേജ്'),
+                          ),
+                        ),
+                      if (entries.length == pageSize)
+                        TextButton(
+                          onPressed: () => page(offset + pageSize),
+                          child: Text(userText(context, 'Next', 'അടുത്ത പേജ്')),
+                        ),
+                    ],
                   ),
               ],
-            ),
-          ],
-        );
-      },
+            );
+          },
+        ),
+      ),
     ),
   );
 }

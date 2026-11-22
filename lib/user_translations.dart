@@ -4,6 +4,31 @@
 // Reviewed overrides cover payment confirmations and common wallet terms.
 const Map<String, Map<String, String>> userTranslations = {
   "hi": {
+    "Your community": "आपका समुदाय",
+    "Your referral tools": "आपके रेफ़रल विकल्प",
+    "Everything you need to get started.":
+        "शुरू करने के लिए आपकी ज़रूरत की सभी चीज़ें।",
+    "Copy or share your personal code": "अपना कोड कॉपी या साझा करें",
+    "See your referral connections": "अपने रेफ़रल से जुड़े लोगों को देखें",
+    "Have a code from a friend?": "क्या आपके पास किसी मित्र का कोड है?",
+    "Connect with a friend": "मित्र से जुड़ें",
+    "Add the code your friend shared with you.":
+        "अपने मित्र द्वारा साझा किया गया कोड दर्ज करें।",
+    "Friend’s code": "मित्र का कोड",
+    "Enter the code exactly as shared.":
+        "कोड ठीक वैसे ही दर्ज करें जैसे साझा किया गया है।",
+    "You’ll confirm with your Security PIN.":
+        "आप अपने सुरक्षा पिन से पुष्टि करेंगे।",
+    "Share your code": "अपना कोड साझा करें",
+    "Share your code with friends to invite them.":
+        "मित्रों को आमंत्रित करने के लिए अपना कोड साझा करें।",
+    "Referral rewards": "रेफ़रल पुरस्कार",
+    "Your connections": "आपके संपर्क",
+    "See the people connected through your referral codes.":
+        "अपने रेफ़रल कोड से जुड़े लोगों को देखें।",
+    "Referral connections": "रेफ़रल संपर्क",
+    "Names and emails are masked for privacy.":
+        "गोपनीयता के लिए नाम और ईमेल छिपाए गए हैं।",
     "Customer Support": "ग्राहक सहायता",
     "Include your account email if needed. Never send your password or Security PIN. This chat is available on this device.": "ज़रूरत हो तो अपने खाते का ईमेल दें। अपना पासवर्ड या सुरक्षा पिन कभी न भेजें। यह चैट इसी डिवाइस पर उपलब्ध है।",
     "Unable to load messages. Tap refresh to retry.":
@@ -564,6 +589,32 @@ const Map<String, Map<String, String>> userTranslations = {
     "you@example.com": "you@example.com",
   },
   "ta": {
+    "Your community": "உங்கள் சமூகம்",
+    "Your referral tools": "உங்கள் பரிந்துரை கருவிகள்",
+    "Everything you need to get started.": "தொடங்கத் தேவையான அனைத்தும்.",
+    "Copy or share your personal code":
+        "உங்கள் குறியீட்டை நகலெடுக்கவும் அல்லது பகிரவும்",
+    "See your referral connections":
+        "உங்கள் பரிந்துரை தொடர்புகளைப் பார்க்கவும்",
+    "Have a code from a friend?": "நண்பரிடம் இருந்து குறியீடு பெற்றீர்களா?",
+    "Connect with a friend": "நண்பருடன் இணையுங்கள்",
+    "Add the code your friend shared with you.":
+        "உங்கள் நண்பர் பகிர்ந்த குறியீட்டைச் சேர்க்கவும்.",
+    "Friend’s code": "நண்பரின் குறியீடு",
+    "Enter the code exactly as shared.":
+        "பகிரப்பட்ட குறியீட்டை அப்படியே உள்ளிடவும்.",
+    "You’ll confirm with your Security PIN.":
+        "உங்கள் பாதுகாப்பு பின்னைப் பயன்படுத்தி உறுதிசெய்யவும்.",
+    "Share your code": "உங்கள் குறியீட்டைப் பகிருங்கள்",
+    "Share your code with friends to invite them.":
+        "நண்பர்களை அழைக்க உங்கள் குறியீட்டைப் பகிருங்கள்.",
+    "Referral rewards": "பரிந்துரை வெகுமதிகள்",
+    "Your connections": "உங்கள் தொடர்புகள்",
+    "See the people connected through your referral codes.":
+        "பரிந்துரை குறியீடுகள் மூலம் இணைந்தவர்களைப் பார்க்கவும்.",
+    "Referral connections": "பரிந்துரை தொடர்புகள்",
+    "Names and emails are masked for privacy.":
+        "தனியுரிமைக்காக பெயர்களும் மின்னஞ்சல்களும் மறைக்கப்படுகின்றன.",
     "Customer Support": "வாடிக்கையாளர் ஆதரவு",
     "Include your account email if needed. Never send your password or Security PIN. This chat is available on this device.": "தேவைப்பட்டால் உங்கள் கணக்கின் மின்னஞ்சலைக் குறிப்பிடவும். உங்கள் கடவுச்சொல் அல்லது பாதுகாப்பு பின்னை அனுப்ப வேண்டாம். இந்த அரட்டை இந்த சாதனத்தில் கிடைக்கும்.",
     "Unable to load messages. Tap refresh to retry.":
@@ -1121,6 +1172,29 @@ const Map<String, Map<String, String>> userTranslations = {
     "you@example.com": "you@example.com",
   },
   "ar": {
+    "Your community": "مجتمعك",
+    "Your referral tools": "أدوات الإحالة",
+    "Everything you need to get started.": "كل ما تحتاجه للبدء.",
+    "Copy or share your personal code": "انسخ رمزك أو شاركه",
+    "See your referral connections": "اطّلع على علاقات الإحالة",
+    "Have a code from a friend?": "هل لديك رمز من صديق؟",
+    "Connect with a friend": "تواصل مع صديق",
+    "Add the code your friend shared with you.":
+        "أدخل الرمز الذي شاركه معك صديقك.",
+    "Friend’s code": "رمز الصديق",
+    "Enter the code exactly as shared.": "أدخل الرمز كما تمت مشاركته.",
+    "You’ll confirm with your Security PIN.":
+        "ستؤكد باستخدام رقم الأمان الخاص بك.",
+    "Share your code": "شارك رمزك",
+    "Share your code with friends to invite them.":
+        "شارك رمزك مع أصدقائك لدعوتهم.",
+    "Referral rewards": "مكافآت الإحالة",
+    "Your connections": "علاقاتك",
+    "See the people connected through your referral codes.":
+        "اطّلع على الأشخاص المرتبطين برموز الإحالة.",
+    "Referral connections": "علاقات الإحالة",
+    "Names and emails are masked for privacy.":
+        "تُحجب الأسماء والبريد الإلكتروني حفاظاً على الخصوصية.",
     "Customer Support": "دعم العملاء",
     "Include your account email if needed. Never send your password or Security PIN. This chat is available on this device.": "أضف بريد حسابك الإلكتروني عند الحاجة. لا ترسل كلمة المرور أو رمز الأمان أبداً. تتوفر هذه المحادثة على هذا الجهاز.",
     "Unable to load messages. Tap refresh to retry.":

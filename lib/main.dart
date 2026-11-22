@@ -22,6 +22,7 @@ import 'personal_information.dart';
 import 'secure_auth_storage.dart';
 import 'referral_download.dart';
 import 'referral_history.dart';
+import 'referral_design.dart';
 import 'wallet_balance.dart';
 import 'wallet_transfer.dart';
 import 'legal_pages.dart';
@@ -6333,82 +6334,376 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
 
   Widget referralMenu(BuildContext context) => AppListView(
     panel: false,
-    padding: const EdgeInsets.all(14),
+    padding: const EdgeInsets.fromLTRB(18, 16, 18, 32),
     children: [
-      GrowthHero(
+      ReferralHeader(
+        eyebrow: uf(context, 'Your community', 'നിങ്ങളുടെ കൂട്ടായ്മ'),
         title: uf(context, 'Refer & Earn', 'Refer & Earn'),
-        subtitle: uf(
+        description: uf(
           context,
           'Invite your friends and earn rewards',
           'സുഹൃത്തുക്കളെ ക്ഷണിച്ച് rewards നേടുക',
         ),
-        icon: Icons.card_giftcard_rounded,
-        background: 'referral_background',
+        icon: Icons.people_alt_outlined,
+        dark: true,
       ),
-      const SizedBox(height: 16),
-      Card(
-        child: Column(
-          children: [
-            ProfileMenuTile(
-              icon: Icons.qr_code,
-              title: tr(context, 'referralCode'),
-              onTap: () => openReferral(ReferralSection.code),
-            ),
-            ProfileMenuTile(
-              icon: Icons.history,
-              title: uf(context, 'Referral History', 'Referral ചരിത്രം'),
-              onTap: () {
-                final gateway = widget.gateway;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => ReferralHistoryPage(
-                      load: gateway is ReferralHistoryGateway
-                          ? (gateway as ReferralHistoryGateway)
-                                .loadReferralHistory
-                          : (_) => Future.error(
-                              StateError('Referral history unavailable'),
-                            ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            ProfileMenuTile(
-              icon: Icons.link,
-              title: tr(context, 'referralEnter'),
-              onTap: () => openReferral(ReferralSection.enter),
-            ),
-          ],
+      const SizedBox(height: 24),
+      Text(
+        uf(context, 'Your referral tools', 'നിങ്ങളുടെ referral tools'),
+        style: const TextStyle(
+          color: growthInk,
+          fontSize: 17,
+          fontWeight: FontWeight.w800,
         ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        uf(
+          context,
+          'Everything you need to get started.',
+          'തുടങ്ങാൻ വേണ്ടതെല്ലാം ഇവിടെ.',
+        ),
+        style: const TextStyle(color: userMuted, fontSize: 12),
+      ),
+      const SizedBox(height: 14),
+      ReferralActionTile(
+        icon: Icons.ios_share_rounded,
+        title: tr(context, 'referralCode'),
+        subtitle: uf(
+          context,
+          'Copy or share your personal code',
+          'നിങ്ങളുടെ code copy ചെയ്യുകയോ share ചെയ്യുകയോ ചെയ്യാം',
+        ),
+        color: growthPurple,
+        onTap: () => openReferral(ReferralSection.code),
+      ),
+      const SizedBox(height: 10),
+      ReferralActionTile(
+        icon: Icons.history_rounded,
+        title: uf(context, 'Referral History', 'Referral ചരിത്രം'),
+        subtitle: uf(
+          context,
+          'See your referral connections',
+          'Referral വഴി ബന്ധമുള്ളവരെ കാണാം',
+        ),
+        color: userTeal,
+        onTap: () {
+          final gateway = widget.gateway;
+          Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => ReferralHistoryPage(
+                load: gateway is ReferralHistoryGateway
+                    ? (gateway as ReferralHistoryGateway).loadReferralHistory
+                    : (_) => Future.error(
+                        StateError('Referral history unavailable'),
+                      ),
+              ),
+            ),
+          );
+        },
+      ),
+      const SizedBox(height: 10),
+      ReferralActionTile(
+        icon: Icons.link_rounded,
+        title: tr(context, 'referralEnter'),
+        subtitle: uf(
+          context,
+          'Have a code from a friend?',
+          'സുഹൃത്തിൽ നിന്ന് code ലഭിച്ചോ?',
+        ),
+        color: const Color(0xffbb6c27),
+        onTap: () => openReferral(ReferralSection.enter),
+      ),
+      const SizedBox(height: 20),
+      Text(
+        tr(context, 'referralNoReward'),
+        style: const TextStyle(color: userMuted, fontSize: 11, height: 1.5),
       ),
     ],
   );
 
   Widget referralEntry(BuildContext context, ProfileInfo info) => AppListView(
     panel: false,
-    padding: const EdgeInsets.all(14),
+    padding: const EdgeInsets.fromLTRB(18, 16, 18, 32),
     children: [
-      if (info.referralJoined)
-        Text(tr(context, 'referralJoined'))
-      else ...[
-        TextField(
-          controller: referralCodeInput,
-          enabled: !applyingReferral,
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.link),
-            labelText: tr(context, 'referralEnter'),
-          ),
-          onSubmitted: (_) => submitReferral(),
+      ReferralHeader(
+        eyebrow: uf(
+          context,
+          'Connect with a friend',
+          'സുഹൃത്തുമായി ബന്ധിപ്പിക്കുക',
         ),
-        const SizedBox(height: 12),
-        FilledButton(
-          onPressed: applyingReferral ? null : submitReferral,
-          child: Text(uf(context, 'Submit', 'നൽകുക')),
+        title: tr(context, 'referralEnter'),
+        description: uf(
+          context,
+          'Add the code your friend shared with you.',
+          'സുഹൃത്ത് share ചെയ്ത code നൽകുക.',
         ),
-      ],
+        icon: Icons.link_rounded,
+      ),
+      const SizedBox(height: 18),
+      ReferralSurface(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (info.referralJoined) ...[
+              const Icon(Icons.check_circle_rounded, size: 40, color: userTeal),
+              const SizedBox(height: 12),
+              Text(
+                tr(context, 'referralJoined'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: growthInk,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ] else ...[
+              Text(
+                uf(context, 'Friend’s code', 'സുഹൃത്തിന്റെ code'),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: growthInk,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                uf(
+                  context,
+                  'Enter the code exactly as shared.',
+                  'Share ചെയ്തതുപോലെ code നൽകുക.',
+                ),
+                style: const TextStyle(color: userMuted, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: referralCodeInput,
+                enabled: !applyingReferral,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.vpn_key_outlined),
+                  labelText: tr(context, 'referralEnter'),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onSubmitted: (_) => submitReferral(),
+              ),
+              const SizedBox(height: 14),
+              FilledButton.icon(
+                onPressed: applyingReferral ? null : submitReferral,
+                icon: const Icon(Icons.arrow_forward_rounded),
+                label: Text(uf(context, 'Submit', 'നൽകുക')),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                uf(
+                  context,
+                  'You’ll confirm with your Security PIN.',
+                  'Security PIN ഉപയോഗിച്ച് സ്ഥിരീകരിക്കുക.',
+                ),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: userMuted, fontSize: 11),
+              ),
+            ],
+          ],
+        ),
+      ),
     ],
   );
+
+  Widget referralCodePage(BuildContext context, ProfileInfo info) {
+    final next = [5, 10, 15].where((n) => n > info.referralCount).firstOrNull;
+    final milestone = next == null
+        ? uf(
+            context,
+            'All referral milestones reached.',
+            'എല്ലാ referral milestones-ഉം പൂർത്തിയായി.',
+          )
+        : '${uf(context, 'Next milestone', 'അടുത്ത milestone')}: ${info.referralCount}/$next';
+    return AppListView(
+      panel: false,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 32),
+      children: [
+        ReferralHeader(
+          eyebrow: uf(context, 'Share your code', 'നിങ്ങളുടെ code പങ്കിടുക'),
+          title: tr(context, 'referralCode'),
+          description: uf(
+            context,
+            'Share your code with friends to invite them.',
+            'സുഹൃത്തുക്കളെ ക്ഷണിക്കാൻ നിങ്ങളുടെ code share ചെയ്യുക.',
+          ),
+          icon: Icons.ios_share_rounded,
+          dark: true,
+        ),
+        const SizedBox(height: 18),
+        ReferralSurface(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                tr(context, 'referralCode'),
+                style: const TextStyle(
+                  color: userMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 17,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xfff3efff),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xffd8c9fb)),
+                ),
+                child: SelectableText(
+                  info.referralCode,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: growthInk,
+                    fontSize: 22,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              FilledButton.icon(
+                onPressed: sharingReferral
+                    ? null
+                    : () => shareReferral(info.referralCode),
+                icon: const Icon(Icons.ios_share_rounded),
+                label: Text(tr(context, 'shareReferral')),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  await Clipboard.setData(
+                    ClipboardData(text: info.referralCode),
+                  );
+                  if (context.mounted) toast(context, tr(context, 'copied'));
+                },
+                icon: const Icon(Icons.copy_rounded),
+                label: Text(tr(context, 'copyCode')),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        ReferralSurface(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.people_outline_rounded, color: userTeal),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '${tr(context, 'referralCount')}: ${info.referralCount}',
+                      style: const TextStyle(
+                        color: growthInk,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                milestone,
+                style: const TextStyle(color: userMuted, fontSize: 12),
+              ),
+              if (next != null) ...[
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: LinearProgressIndicator(
+                    value: (info.referralCount / next).clamp(0.0, 1.0),
+                    minHeight: 7,
+                    backgroundColor: const Color(0xffeeeaf7),
+                    color: userTeal,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          uf(context, 'Referral rewards', 'Referral rewards'),
+          style: const TextStyle(
+            color: growthInk,
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          tr(context, 'referralNoReward'),
+          style: const TextStyle(color: userMuted, fontSize: 11, height: 1.5),
+        ),
+        const SizedBox(height: 12),
+        for (final reward in info.referralRewards.entries) ...[
+          ReferralSurface(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.card_giftcard_rounded,
+                      color: growthPurple,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        reward.key == 'invite'
+                            ? userText(
+                                context,
+                                'Each referral',
+                                'ഓരോ invite-നും',
+                              )
+                            : '${reward.key.split('_').last} ${userText(context, 'invites', 'invites')} · ${userText(context, 'extra bonus', 'അധിക bonus')}',
+                        style: const TextStyle(
+                          color: growthInk,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${reward.value} ${tr(context, 'coins')}',
+                  style: const TextStyle(
+                    color: growthPurple,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) => UserPageScaffold(
@@ -6455,6 +6750,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
             widget.referralSection == ReferralSection.enter) {
           return referralEntry(context, info);
         }
+        if (!widget.accounts) return referralCodePage(context, info);
         return AppListView(
           panel: false,
           padding: const EdgeInsets.all(14),
@@ -6698,195 +6994,6 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                       color: growthPurple,
                       fontSize: 20,
                     ),
-                  ),
-                ),
-              ),
-            ] else ...[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.card_giftcard, color: growthPurple),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              tr(context, 'referralNoReward'),
-                              style: const TextStyle(fontSize: 11),
-                            ),
-                          ),
-                        ],
-                      ),
-                      for (final reward in info.referralRewards.entries)
-                        Card(
-                          color: const Color(0xfff2edfb),
-                          elevation: 0,
-                          child: ListTile(
-                            dense: true,
-                            visualDensity: const VisualDensity(vertical: -4),
-                            minTileHeight: 42,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                            ),
-                            horizontalTitleGap: 8,
-                            minLeadingWidth: 18,
-                            leading: const Icon(
-                              Icons.radio_button_unchecked,
-                              color: growthPurple,
-                              size: 18,
-                            ),
-                            title: Text(
-                              reward.key == 'invite'
-                                  ? userText(
-                                      context,
-                                      'Each referral',
-                                      'ഓരോ invite-നും',
-                                    )
-                                  : '${reward.key.split('_').last} ${userText(context, 'invites', 'invites')} · ${userText(context, 'extra bonus', 'അധിക bonus')}',
-                              style: const TextStyle(fontSize: 11),
-                            ),
-                            subtitle: Text(
-                              reward.key == 'invite'
-                                  ? uf(
-                                      context,
-                                      'Reward for each successful referral',
-                                      'ഓരോ referral-നും reward',
-                                    )
-                                  : uf(
-                                      context,
-                                      'Invite friends and get a bonus',
-                                      'സുഹൃത്തുക്കളെ ക്ഷണിച്ച് bonus നേടുക',
-                                    ),
-                              style: const TextStyle(fontSize: 8),
-                            ),
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xffdfd0fb),
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              child: Text(
-                                '🪙 ${reward.value} ${tr(context, 'coins')}',
-                                style: const TextStyle(
-                                  fontSize: 8,
-                                  color: growthPurple,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 10),
-                      Container(
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xffeee5fa),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xffc9b3ed)),
-                        ),
-                        child: SelectableText(
-                          info.referralCode,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: growthInk,
-                          ),
-                        ),
-                      ),
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 34),
-                          side: const BorderSide(color: Color(0xffb797f2)),
-                        ),
-                        onPressed: () async {
-                          await Clipboard.setData(
-                            ClipboardData(text: info.referralCode),
-                          );
-                          if (context.mounted) {
-                            toast(context, tr(context, 'copied'));
-                          }
-                        },
-                        icon: const Icon(Icons.copy),
-                        label: Text(tr(context, 'copyCode')),
-                      ),
-                      FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(0, 38),
-                        ),
-                        onPressed: sharingReferral
-                            ? null
-                            : () => shareReferral(info.referralCode),
-                        icon: const Icon(Icons.share_outlined),
-                        label: Text(tr(context, 'shareReferral')),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xffe6d8fc),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.people,
-                              color: growthPurple,
-                              size: 26,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '${tr(context, 'referralCount')}: ${info.referralCount}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              width: 1,
-                              height: 28,
-                              color: const Color(0xffb18ae5),
-                            ),
-                            const SizedBox(width: 10),
-                            const Icon(
-                              Icons.flag,
-                              color: growthPurple,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Builder(
-                                builder: (context) {
-                                  final next = [5, 10, 15]
-                                      .where((n) => n > info.referralCount)
-                                      .firstOrNull;
-                                  return Text(
-                                    next == null
-                                        ? uf(
-                                            context,
-                                            'All referral milestones reached.',
-                                            'എല്ലാ referral milestones-ഉം പൂർത്തിയായി.',
-                                          )
-                                        : '${uf(context, 'Next milestone', 'അടുത്ത milestone')}: ${info.referralCount}/$next',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ),
