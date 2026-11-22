@@ -151,6 +151,21 @@ void main() {
     expect(find.text('5 extra tasks with a referral'), findsOneWidget);
   });
 
+  testWidgets('campaign limits invite opens the real referral code page', (
+    tester,
+  ) async {
+    final gateway = FakeProfileGateway()..referralCount = 0;
+    await showProfile(tester, gateway);
+    await tester.ensureVisible(find.text('Campaign Limits'));
+    await tester.tap(find.text('Campaign Limits'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('campaign_limits_invite')));
+    await tester.tap(find.byKey(const Key('campaign_limits_invite')));
+    await tester.pumpAndSettle();
+    expect(find.text('invite-code'), findsOneWidget);
+    expect(find.text('Share referral code'), findsOneWidget);
+  });
+
   testWidgets('referral share contains the code and app download link', (
     tester,
   ) async {
@@ -175,7 +190,62 @@ void main() {
     await tester.pumpAndSettle();
     expect(shared, contains('Your referral code: invite-code'));
     expect(shared, contains('Download Freelan Space: ${gateway.downloadUrl}'));
+    expect(
+      shared,
+      contains('Join me on Freelan Space! Use my referral code below.'),
+    );
+    expect(
+      shared,
+      contains(
+        'After signing in, open Profile, choose Referral program, then tap Enter a referral code.',
+      ),
+    );
   });
+
+  for (final locale in ['hi', 'ta', 'ar', 'ml']) {
+    testWidgets(
+      'referral invitation includes localized joining steps in $locale',
+      (tester) async {
+        String? shared;
+        final gateway = FakeProfileGateway();
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: Locale(locale),
+            supportedLocales: const [
+              Locale('en'),
+              Locale('hi'),
+              Locale('ta'),
+              Locale('ar'),
+              Locale('ml'),
+            ],
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
+            home: ProfileDetailsPage(
+              uid: 'user',
+              gateway: gateway,
+              accounts: false,
+              referralSection: ReferralSection.code,
+              shareReferral: (text) async => shared = text,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final share = find.byIcon(Icons.ios_share_rounded).last;
+        await tester.ensureVisible(share);
+        await tester.tap(share);
+        await tester.pumpAndSettle();
+        final expectedStep = switch (locale) {
+          'hi' => 'साइन इन करने के बाद प्रोफ़ाइल',
+          'ta' => 'உள்நுழைந்த பிறகு சுயவிவரத்தைத்',
+          'ar' => 'بعد تسجيل الدخول، افتح الملف الشخصي',
+          _ => 'Sign in ചെയ്ത ശേഷം Profile',
+        };
+        expect(shared, contains(expectedStep));
+        expect(shared, contains('invite-code'));
+        expect(shared, contains(gateway.downloadUrl));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets('referral sharing reports an unavailable download link', (
     tester,

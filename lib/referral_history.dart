@@ -308,8 +308,13 @@ abstract interface class CampaignPlanGateway {
 }
 
 class CampaignLimitsPage extends StatefulWidget {
-  const CampaignLimitsPage({super.key, required this.loadPlan});
+  const CampaignLimitsPage({
+    super.key,
+    required this.loadPlan,
+    this.onOpenReferrals,
+  });
   final Future<CampaignPlan> Function() loadPlan;
+  final Future<void> Function()? onOpenReferrals;
 
   @override
   State<CampaignLimitsPage> createState() => _CampaignLimitsPageState();
@@ -317,6 +322,16 @@ class CampaignLimitsPage extends StatefulWidget {
 
 class _CampaignLimitsPageState extends State<CampaignLimitsPage> {
   late Future<CampaignPlan> plan = widget.loadPlan();
+
+  Future<void> openReferrals() async {
+    await widget.onOpenReferrals!();
+    if (mounted) {
+      setState(() {
+        plan = widget.loadPlan();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) => UserPageScaffold(
     identity: UserPageIdentity.profile,
@@ -380,23 +395,117 @@ class _CampaignLimitsPageState extends State<CampaignLimitsPage> {
                 ),
               ),
             ),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.people_outline),
-                title: Text(
-                  userText(
-                    context,
-                    '${value.referralBonus} extra tasks with a referral',
-                    'Referral വഴി ${value.referralBonus} extra tasks',
+            if (value.referralBonus > 0)
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.people_outline),
+                  title: Text(
+                    userText(
+                      context,
+                      '${value.referralBonus} extra tasks with a referral',
+                      'Referral വഴി ${value.referralBonus} extra tasks',
+                    ),
+                  ),
+                  subtitle: Text(
+                    userText(
+                      context,
+                      'After your first successful referral, you can add up to ${value.baseTasks + value.referralBonus} tasks per campaign.',
+                      'ആദ്യ successful referral കഴിഞ്ഞാൽ ഒരു campaign-ന് ${value.baseTasks + value.referralBonus} tasks വരെ ചേർക്കാം.',
+                    ),
                   ),
                 ),
-                subtitle: Text(
-                  userText(
-                    context,
-                    'After your first successful referral, you can add up to ${value.baseTasks + value.referralBonus} tasks per campaign.',
-                    'ആദ്യ successful referral കഴിഞ്ഞാൽ ഒരു campaign-ന് ${value.baseTasks + value.referralBonus} tasks വരെ ചേർക്കാം.',
+              ),
+            const SizedBox(height: 16),
+            ReferralSurface(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    userText(
+                      context,
+                      'Your current task limit',
+                      'നിങ്ങളുടെ നിലവിലെ task പരിധി',
+                    ),
+                    style: const TextStyle(
+                      color: userMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${value.maxTasks}',
+                    style: const TextStyle(
+                      color: growthPurple,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    userText(
+                      context,
+                      'tasks per campaign',
+                      'ഒരു campaign-ലെ tasks',
+                    ),
+                  ),
+                  if (value.referralBonus > 0) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      value.maxTasks > value.baseTasks
+                          ? userText(
+                              context,
+                              'Referral bonus unlocked',
+                              'Referral bonus ലഭിച്ചു',
+                            )
+                          : userText(
+                              context,
+                              'Invite a friend to unlock more tasks',
+                              'കൂടുതൽ tasks ലഭിക്കാൻ ഒരു സുഹൃത്തിനെ ക്ഷണിക്കൂ',
+                            ),
+                      style: const TextStyle(
+                        color: growthInk,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      userText(
+                        context,
+                        'Share your code. Your first successful referral unlocks extra tasks for every campaign.',
+                        'നിങ്ങളുടെ code പങ്കിടൂ. ആദ്യ successful referral എല്ലാ campaign-കൾക്കും അധിക tasks നൽകും.',
+                      ),
+                      style: const TextStyle(color: userMuted, height: 1.4),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      userText(
+                        context,
+                        'Additional referrals do not add more tasks. Standard coin charges apply.',
+                        'കൂടുതൽ referrals അധിക tasks നൽകില്ല. സാധാരണ coin നിരക്കുകൾ ബാധകമാണ്.',
+                      ),
+                      style: const TextStyle(
+                        color: userMuted,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                    if (widget.onOpenReferrals != null) ...[
+                      const SizedBox(height: 16),
+                      FilledButton.icon(
+                        key: const Key('campaign_limits_invite'),
+                        onPressed: openReferrals,
+                        icon: const Icon(Icons.share_outlined),
+                        label: Text(
+                          userText(
+                            context,
+                            'Share your code',
+                            'നിങ്ങളുടെ code പങ്കിടൂ',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ],
               ),
             ),
           ],
