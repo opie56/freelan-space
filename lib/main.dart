@@ -30,6 +30,7 @@ import 'legal_pages.dart';
 import 'safe_error_widget.dart';
 import 'secure_transport.dart';
 import 'password_policy.dart';
+import 'password_recovery.dart';
 import 'auth_captcha.dart';
 import 'auth_languages.dart';
 import 'auth_invitation.dart';
@@ -1192,7 +1193,9 @@ class AuthScreen extends StatefulWidget {
     this.captchaProvider,
     this.socialLinks,
     this.savedLogin,
+    this.recoveryClient,
   });
+  final PasswordRecoveryClient Function()? recoveryClient;
   final UserSavedLogin? savedLogin;
   final LoadSocialLinks? socialLinks;
   final AuthActions? actions;
@@ -1392,17 +1395,21 @@ class _AuthScreenState extends State<AuthScreen> {
   });
 
   Future<void> reset() async {
-    if (!validEmail()) return;
-    await perform(() async {
-      final captchaToken = await (widget.captchaProvider ?? requestAuthCaptcha)(
-        context,
-      );
-      if (!mounted) return;
-      await actions.reset(email.text.trim(), captchaToken: captchaToken);
-      if (!mounted) return;
-      startCooldown();
-      toast(context, tr(context, 'resetSent'));
-    });
+    if (busy) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PasswordRecoveryPage(
+          initialEmail: email.text,
+          savedLogin: savedLogin,
+          captchaProvider: widget.captchaProvider,
+          createClient:
+              widget.recoveryClient ??
+              () =>
+                  PasswordRecoveryClient(actions.signupClient(), authRedirect),
+        ),
+      ),
+    );
+    if (mounted) password.clear();
   }
 
   InputDecoration fieldDecoration(
@@ -1694,7 +1701,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: busy || cooldown > 0 ? null : reset,
+                          onPressed: busy ? null : reset,
                           child: Text(tr(context, 'forgot')),
                         ),
                       )
