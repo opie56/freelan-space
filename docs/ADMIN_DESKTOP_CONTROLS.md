@@ -10,7 +10,13 @@ Send notification has separate In-app notification and Push notification checkbo
 
 After a successful administrator password sign-in and MFA challenge, Save login securely stores one login per project using flutter_secure_storage on the current Windows account. Click the email field on a later visit to fill the saved email/password. Passwords remain obscured until the visibility control is used. Forget saved login removes the protected entry. No passwords are stored in preferences.
 
-In Supabase Dashboard → Authentication → Email Templates → Reset Password, set the recovery email body to the contents of supabase/templates/recovery.html. The template must include {{ .Token }} so the recipient receives the six-digit recovery OTP. Preserve configured SMTP, expiry and rate limits. This dashboard setting cannot be applied through the connected Supabase tools.
+In Supabase Dashboard → Authentication → Email Templates → Reset Password, set the recovery email body to the contents of supabase/templates/recovery.html. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:950f4dd2d778593bb15f45f11b171dada12c84c83e60a55c26a3c8baa1ae140d -->
+
+The shared template includes {{ .Token }} for six-digit recovery OTPs and {{ .ConfirmationURL }} for older user-app recovery links.
+
+<!-- /coderabbit-ai-generated:v1 --> Preserve configured SMTP, expiry and rate limits. This dashboard setting cannot be applied through the connected Supabase tools.
 
 <!-- coderabbit-ai-generated:v1 -->
 

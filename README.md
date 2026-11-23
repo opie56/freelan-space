@@ -54,7 +54,13 @@ Flutter Android app using Supabase Auth and PostgreSQL for self-reported Instagr
 
 <!-- coderabbit-ai-generated-section:v1:fa0348a4265fec4bf157e4bdf167474e26bce42a9640b0322dda6ef8fec283e8 -->
 
-1. Enable email/password authentication and **Confirm email** in Supabase Authentication. Configure custom SMTP. In Authentication → Email templates → Confirm signup, replace the confirmation link with `<p>Your Freelan Space verification code is: <strong>{{ .Token }}</strong></p>`. Configure email OTP length to 6 digits. Keep the password recovery template intact. Signup uses `signUp(email, password)`, then `verifyOTP(type: signup)` on a separate in-memory client; verification never logs the main app in. The user must then sign in using email and password. Invalid credentials display a signup suggestion because Supabase does not distinguish an unknown email from a wrong password. Signup/resend have a 60-second client cooldown; server rate limits still apply. The Already received a code option lets an unconfirmed user resume after app restart.
+1. Enable email/password authentication and **Confirm email** in Supabase Authentication. Configure custom SMTP. In Authentication → Email templates → Confirm signup, replace the confirmation link with `<p>Your Freelan Space verification code is: <strong>{{ .Token }}</strong></p>`. Configure email OTP length to 6 digits. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:0aae538fcf50bb8df9f20967443047ee2494ac30494309e79570f14351bc18f2 -->
+
+For password recovery configure `supabase/templates/recovery.html` in the Reset Password email template, including both `{{ .Token }}` for current apps and `{{ .ConfirmationURL }}` for older user apps. Verify six-digit email delivery before distributing the new app.
+
+<!-- /coderabbit-ai-generated:v1 --> Signup uses `signUp(email, password)`, then `verifyOTP(type: signup)` on a separate in-memory client; verification never logs the main app in. The user must then sign in using email and password. Invalid credentials display a signup suggestion because Supabase does not distinguish an unknown email from a wrong password. Signup/resend have a 60-second client cooldown; server rate limits still apply. The Already received a code option lets an unconfirmed user resume after app restart.
 
 <!-- /coderabbit-ai-generated:v1 -->
 
@@ -65,7 +71,13 @@ Flutter Android app using Supabase Auth and PostgreSQL for self-reported Instagr
 
 <!-- coderabbit-ai-generated-section:v1:fa38bdc9a4b45a6858448acb3089bc3cdb8ff9ded9e6a33ec12bfcd62202b957 -->
 
-2. Before distributing the updated Android app, add `space.freelan.app://login-callback/` under Authentication → URL Configuration → Redirect URLs. Keep `io.supabase.growthcircle://login-callback/` allowed while older app versions and previously sent recovery links are in use. The app uses signup OTPs and directs password recovery to the new URL.
+2. Before distributing the updated Android app, add `space.freelan.app://login-callback/` under Authentication → URL Configuration → Redirect URLs. Keep `io.supabase.growthcircle://login-callback/` allowed while older app versions and previously sent recovery links are in use. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:9e0592e2021dcce4099a91f633877395cfe10c8c63e79795d14dae1bfa54f3eb -->
+
+The current app verifies recovery OTPs in an isolated session; the URL remains necessary for older user app recovery links.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 <!-- coderabbit-ai-generated:v1 -->
@@ -144,7 +156,13 @@ The supplied Firebase configuration for `space.freelan.app` uses project `freela
 
 <!-- coderabbit-ai-generated-section:v1:5c3bc7c9a47c40b7d935a2dd6323f92b52b12224bd9fa65802d911d1cfc38ecb -->
 
-New password recovery requests use `space.freelan.app://login-callback/`. The app also accepts the legacy callback for previously issued recovery links; keep the legacy URL allowed in Supabase until older clients and outstanding links are retired.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:c8f34ee9bae304071f9700732bd2e4c82da8f3ee1f58ae08c000d9545bbe5e50 -->
+
+Current password recovery requests send an email OTP and use an isolated temporary session to set a confirmed new password. Older user apps use the recovery link in the shared email template. The app also accepts legacy callbacks for previously issued links; retain both redirect URLs until older clients and outstanding links are retired.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 

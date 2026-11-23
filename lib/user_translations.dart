@@ -4,6 +4,31 @@
 // Reviewed overrides cover payment confirmations and common wallet terms.
 const Map<String, Map<String, String>> userTranslations = {
   "hi": {
+    "Use at least 12 characters (up to 72 UTF-8 bytes), including uppercase and lowercase letters, a number and a symbol.": "कम से कम 12 अक्षर (अधिकतम 72 UTF-8 बाइट) रखें, जिनमें बड़े और छोटे अंग्रेज़ी अक्षर, एक अंक और एक चिह्न हो।",
+    "Account verification": "खाता सत्यापन",
+    "Verify your account": "अपना खाता सत्यापित करें",
+    "Check your email": "अपना ईमेल जाँचें",
+    "Create a new password": "नया पासवर्ड बनाएँ",
+    "We will send a verification code to your email.":
+        "हम आपके ईमेल पर सत्यापन कोड भेजेंगे।",
+    "Choose a strong password for your account.":
+        "अपने खाते के लिए मजबूत पासवर्ड चुनें।",
+    "Enter a valid email address.": "मान्य ईमेल पता दर्ज करें।",
+    "Enter the 6-digit code.": "6 अंकों का कोड दर्ज करें।",
+    "The code is invalid or expired. Try again.":
+        "कोड गलत है या समाप्त हो गया है। फिर प्रयास करें।",
+    "Unable to continue. Please try again.":
+        "आगे नहीं बढ़ पाए। फिर प्रयास करें।",
+    "Passwords do not match.": "पासवर्ड मेल नहीं खाते।",
+    "Unable to update password. Please try again.":
+        "पासवर्ड अपडेट नहीं हुआ। फिर प्रयास करें।",
+    "Password updated": "पासवर्ड अपडेट हो गया",
+    "Sign in with your new password.": "नए पासवर्ड से साइन इन करें।",
+    "Continue": "जारी रखें",
+    "Send code": "कोड भेजें",
+    "Verify code": "कोड सत्यापित करें",
+    "Please wait": "कृपया प्रतीक्षा करें",
+    "Confirm password": "पासवर्ड की पुष्टि करें",
     "Earn coins from approved tasks and use them for campaigns.":
         "स्वीकृत कार्यों से कॉइन कमाएँ और उन्हें अभियानों में इस्तेमाल करें।",
     "Create a campaign": "अभियान बनाएँ",
@@ -609,6 +634,31 @@ const Map<String, Map<String, String>> userTranslations = {
     "you@example.com": "you@example.com",
   },
   "ta": {
+    "Use at least 12 characters (up to 72 UTF-8 bytes), including uppercase and lowercase letters, a number and a symbol.": "குறைந்தது 12 எழுத்துகள் (அதிகபட்சம் 72 UTF-8 பைட்டுகள்), பெரிய மற்றும் சிறிய ஆங்கில எழுத்துகள், எண் மற்றும் குறியீடு சேர்க்கவும்.",
+    "Account verification": "கணக்கு சரிபார்ப்பு",
+    "Verify your account": "உங்கள் கணக்கைச் சரிபார்க்கவும்",
+    "Check your email": "உங்கள் மின்னஞ்சலைப் பார்க்கவும்",
+    "Create a new password": "புதிய கடவுச்சொல்லை உருவாக்கவும்",
+    "We will send a verification code to your email.":
+        "உங்கள் மின்னஞ்சலுக்கு சரிபார்ப்புக் குறியீட்டை அனுப்புவோம்.",
+    "Choose a strong password for your account.":
+        "உங்கள் கணக்கிற்கு வலுவான கடவுச்சொல்லைத் தேர்ந்தெடுக்கவும்.",
+    "Enter a valid email address.": "சரியான மின்னஞ்சல் முகவரியை உள்ளிடவும்.",
+    "Enter the 6-digit code.": "6 இலக்கக் குறியீட்டை உள்ளிடவும்.",
+    "The code is invalid or expired. Try again.":
+        "குறியீடு தவறானது அல்லது காலாவதியானது. மீண்டும் முயற்சிக்கவும்.",
+    "Unable to continue. Please try again.":
+        "தொடர முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+    "Passwords do not match.": "கடவுச்சொற்கள் பொருந்தவில்லை.",
+    "Unable to update password. Please try again.":
+        "கடவுச்சொல்லைப் புதுப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+    "Password updated": "கடவுச்சொல் புதுப்பிக்கப்பட்டது",
+    "Sign in with your new password.": "புதிய கடவுச்சொல் மூலம் உள்நுழையவும்.",
+    "Continue": "தொடரவும்",
+    "Send code": "குறியீட்டை அனுப்பு",
+    "Verify code": "குறியீட்டைச் சரிபார்",
+    "Please wait": "காத்திருக்கவும்",
+    "Confirm password": "கடவுச்சொல்லை உறுதிப்படுத்து",
     "Earn coins from approved tasks and use them for campaigns.": "அங்கீகரிக்கப்பட்ட பணிகளில் நாணயங்களைப் பெற்று அவற்றைப் பிரச்சாரங்களுக்குப் பயன்படுத்துங்கள்.",
     "Create a campaign": "பிரச்சாரத்தை உருவாக்கவும்",
     "How the app works": "செயலி எவ்வாறு செயல்படுகிறது",
@@ -1211,6 +1261,29 @@ const Map<String, Map<String, String>> userTranslations = {
     "you@example.com": "you@example.com",
   },
   "ar": {
+    "Use at least 12 characters (up to 72 UTF-8 bytes), including uppercase and lowercase letters, a number and a symbol.": "استخدم 12 حرفاً على الأقل (بحد أقصى 72 بايت UTF-8)، تتضمن أحرفاً إنجليزية كبيرة وصغيرة ورقماً ورمزاً.",
+    "Account verification": "التحقق من الحساب",
+    "Verify your account": "تحقق من حسابك",
+    "Check your email": "تحقق من بريدك الإلكتروني",
+    "Create a new password": "أنشئ كلمة مرور جديدة",
+    "We will send a verification code to your email.":
+        "سنرسل رمز التحقق إلى بريدك الإلكتروني.",
+    "Choose a strong password for your account.": "اختر كلمة مرور قوية لحسابك.",
+    "Enter a valid email address.": "أدخل عنوان بريد إلكتروني صالحاً.",
+    "Enter the 6-digit code.": "أدخل الرمز المكون من 6 أرقام.",
+    "The code is invalid or expired. Try again.":
+        "الرمز غير صحيح أو منتهي الصلاحية. حاول مجدداً.",
+    "Unable to continue. Please try again.": "تعذر المتابعة. حاول مجدداً.",
+    "Passwords do not match.": "كلمتا المرور غير متطابقتين.",
+    "Unable to update password. Please try again.":
+        "تعذر تحديث كلمة المرور. حاول مجدداً.",
+    "Password updated": "تم تحديث كلمة المرور",
+    "Sign in with your new password.": "سجّل الدخول بكلمة المرور الجديدة.",
+    "Continue": "متابعة",
+    "Send code": "إرسال الرمز",
+    "Verify code": "التحقق من الرمز",
+    "Please wait": "يرجى الانتظار",
+    "Confirm password": "تأكيد كلمة المرور",
     "Earn coins from approved tasks and use them for campaigns.":
         "اكسب عملات من المهام المعتمدة واستخدمها في الحملات.",
     "Create a campaign": "إنشاء حملة",
