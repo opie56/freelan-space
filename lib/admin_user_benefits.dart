@@ -1,3 +1,6 @@
+import 'engagement_benefits.dart';
+import 'admin_coupons.dart';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -30,6 +33,30 @@ class _AdminUserBenefitsPageState extends State<AdminUserBenefitsPage> {
     'saved_task_alerts': 'Saved task alerts',
     'support_reference': 'Support references',
     'login_alerts': 'Login alerts',
+    'referral_links': 'Referral links',
+    'notification_shortcuts': 'Notification shortcuts',
+    'campaign_pause': 'Campaign pause and resume',
+    'saved_filters': 'Saved task filters',
+    'bonus_coupons': 'Bonus coupons',
+    'quiet_hours': 'Notification quiet hours',
+    'device_sessions': 'Device sessions',
+    'offline_view': 'Offline view',
+    'weekly_challenges': 'Weekly challenges',
+    'resubmit_help': 'Resubmission help',
+    'saved_task_reminders': 'Saved task reminders',
+    'monthly_coin_insights': 'Monthly coin insights',
+    'campaign_copy': 'Campaign copy',
+    'campaign_progress_alerts': 'Campaign progress alerts',
+    'low_balance_alerts': 'Low balance alerts',
+    'editable_help': 'Editable help articles',
+    'task_instructions': 'Task instructions',
+    'screenshot_editing': 'Screenshot crop and blur',
+    'submission_waiting': 'Submission waiting time',
+    'report_tracking': 'Report tracking',
+    'notification_filters': 'Notification filters',
+    'saved_task_notes': 'Private task notes',
+    'preferred_task_alerts': 'Preferred task alerts',
+    'spending_insights': 'Coin spending insights',
   };
   Map<String, dynamic>? settings;
   String? error;
@@ -103,6 +130,11 @@ class _AdminUserBenefitsPageState extends State<AdminUserBenefitsPage> {
                       ? (value) => change(entry.key, value)
                       : null,
                 ),
+            AdminEngagementSettings(
+              client: widget.client,
+              canEdit: widget.canEdit,
+            ),
+            AdminCoupons(client: widget.client, canEdit: widget.canEdit),
             BenefitRewardSettings(
               client: widget.client,
               canEdit: widget.canEdit,

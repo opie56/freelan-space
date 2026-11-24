@@ -105,3 +105,18 @@ test('saved-task and login alerts have clear messages', async () => {
  assert.match(sent[0].title,/saved task/i);
  assert.match(sent[1].title,/sign-in/i);
 });
+
+test('engagement push events have distinct messages', async () => {
+ const kinds=['saved_task_reminder','campaign_progress_50','campaign_progress_100','low_balance'];
+ const sent=[];
+ const handler=createHandler({secret:'synthetic',claim:async()=>kinds.map(kind=>({job_id:kind,lease_id:'l',token:'synthetic',kind})),send:async(_token,title,body,kind)=>{sent.push({title,body,kind});return {success:true,permanent:false}},finish:async()=>{}});
+ await handler(new Request('https://worker.test',{method:'POST',headers:{authorization:'Bearer synthetic'}}));
+ assert.match(sent[0].title,/reminder/i);assert.match(sent[1].body,/50%/);assert.match(sent[2].body,/100%/);assert.match(sent[3].title,/balance/i);
+});
+
+test('preferred task alerts use a clear task notification', async () => {
+ let sent;
+ const handler=createHandler({secret:'local-secret',claim:async()=>[{job_id:'task',lease_id:'lease',token:'synthetic',kind:'preferred_task'}],send:async(_token,title,body,kind)=>{sent={title,body,kind};return {success:true,permanent:false}},finish:async()=>{}});
+ await handler(new Request('https://worker.test',{method:'POST',headers:{authorization:'Bearer local-secret'}}));
+ assert.equal(sent.kind,'preferred_task');assert.match(sent.title,/preferred task/i);assert.match(sent.body,/selected category/i);
+});

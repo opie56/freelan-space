@@ -1,4 +1,4 @@
-import 'user_benefits.dart';
+import 'engagement_benefits.dart';
 import 'user_page_canvas.dart';
 
 import 'package:flutter/material.dart';
@@ -20,8 +20,13 @@ String submissionStatus(BuildContext context, String status) =>
     };
 
 class SubmissionHistoryPage extends StatefulWidget {
-  const SubmissionHistoryPage({super.key, required this.client});
+  const SubmissionHistoryPage({
+    super.key,
+    required this.client,
+    this.onResubmit,
+  });
   final SupabaseClient client;
+  final void Function(BuildContext, Map)? onResubmit;
   @override
   State<SubmissionHistoryPage> createState() => _SubmissionHistoryPageState();
 }
@@ -31,7 +36,7 @@ class _SubmissionHistoryPageState extends State<SubmissionHistoryPage> {
   String? status;
   DateTimeRange? range;
   int offset = 0;
-  bool appealsEnabled = false;
+  bool appealsEnabled = false, resubmitEnabled = false, waitingEnabled = false;
   late Future<List<dynamic>> data;
   @override
   void initState() {
@@ -42,8 +47,16 @@ class _SubmissionHistoryPageState extends State<SubmissionHistoryPage> {
 
   Future<void> loadAppeals() async {
     try {
-      final enabled = await benefitEnabled(widget.client, 'submission_appeals');
-      if (mounted) setState(() => appealsEnabled = enabled);
+      final settings = await widget.client.rpc('user_feature_settings') as Map;
+      final enabled = settings['submission_appeals'] == true;
+      final retry = settings['resubmit_help'] == true;
+      if (mounted) {
+        setState(() {
+          appealsEnabled = enabled;
+          resubmitEnabled = retry;
+          waitingEnabled = settings['submission_waiting'] == true;
+        });
+      }
     } catch (_) {
       /* History remains available. */
     }
@@ -301,26 +314,58 @@ class _SubmissionHistoryPageState extends State<SubmissionHistoryPage> {
                                 itemCount: rows.length,
                                 itemBuilder: (c, i) {
                                   final r = rows[i] as Map;
+                                  final submitted = DateTime.tryParse(
+                                    r['submitted_at']?.toString() ?? '',
+                                  );
+                                  final elapsed = submitted == null
+                                      ? null
+                                      : DateTime.now().difference(submitted);
+                                  final waiting =
+                                      waitingEnabled &&
+                                          r['status'] == 'pending' &&
+                                          elapsed != null &&
+                                          !elapsed.isNegative
+                                      ? '\n${uf(c, 'Waiting', 'കാത്തിരിക്കുന്നത്')}: ${elapsed.inHours}h ${elapsed.inMinutes.remainder(60)}m'
+                                      : '';
                                   return Card(
-                                    child: ListTile(
-                                      title: Text(
-                                        '${r['action_type']} · ${submissionStatus(c, r['status'] as String)}',
-                                      ),
-                                      subtitle: Text(
-                                        '${r['campaign_link']}\n${r['submitted_at']}${r['rejection_reason'] == null ? '' : '\n${uf(c, 'Reason', 'കാരണം')}: ${r['rejection_reason']}'}',
-                                      ),
-                                      trailing:
-                                          appealsEnabled &&
-                                              r['status'] == 'rejected'
-                                          ? TextButton(
-                                              onPressed: () => appeal(
-                                                r['submission_id'] as String,
+                                    child: Column(
+                                      children: [
+                                        ListTile(
+                                          title: Text(
+                                            '${r['action_type']} · ${submissionStatus(c, r['status'] as String)}',
+                                          ),
+                                          subtitle: Text(
+                                            '${r['campaign_link']}\n${r['submitted_at']}$waiting${r['rejection_reason'] == null ? '' : '\n${uf(c, 'Reason', 'കാരണം')}: ${r['rejection_reason']}'}',
+                                          ),
+                                          trailing:
+                                              appealsEnabled &&
+                                                  r['status'] == 'rejected'
+                                              ? TextButton(
+                                                  onPressed: () => appeal(
+                                                    r['submission_id']
+                                                        as String,
+                                                  ),
+                                                  child: Text(
+                                                    uf(c, 'Appeal', 'Appeal'),
+                                                  ),
+                                                )
+                                              : null,
+                                        ),
+                                        if (resubmitEnabled &&
+                                            r['status'] == 'rejected' &&
+                                            widget.onResubmit != null)
+                                          TextButton(
+                                            onPressed: () =>
+                                                widget.onResubmit!(context, r),
+                                            child: Text(
+                                              uf(
+                                                context,
+                                                'How to resubmit',
+                                                'വീണ്ടും അയയ്ക്കാൻ സഹായം',
                                               ),
-                                              child: Text(
-                                                uf(c, 'Appeal', 'Appeal'),
-                                              ),
-                                            )
-                                          : null,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   );
                                 },
@@ -450,6 +495,7 @@ class UserHelpPage extends StatelessWidget {
                   ),
                 ),
               if (client != null) ...[
+                UserHelpArticles(client: client!),
                 const SizedBox(height: 16),
                 Card(
                   color: const Color(0xffe9def9),
