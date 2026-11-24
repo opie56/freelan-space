@@ -1,3 +1,4 @@
+import 'admin_user_benefits.dart';
 import 'admin_campaign_plan.dart';
 import 'admin_destination.dart';
 import 'admin_home_slides.dart';
@@ -2377,8 +2378,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       context,
                       MaterialPageRoute<void>(
                         builder: (_) =>
-                            page == 'deletedAccounts' &&
+                            page == 'userFeatures' &&
                                 widget.gateway is SupabaseAdminGateway
+                            ? AdminUserBenefitsPage(
+                                client: (widget.gateway as SupabaseAdminGateway)
+                                    .client,
+                                canEdit: canEdit,
+                              )
+                            : page == 'deletedAccounts' &&
+                                  widget.gateway is SupabaseAdminGateway
                             ? AdminDeletedAccounts(
                                 client: (widget.gateway as SupabaseAdminGateway)
                                     .client,
@@ -2412,6 +2420,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                     ),
                     itemBuilder: (_) => [
+                      if (widget.gateway is SupabaseAdminGateway)
+                        const PopupMenuItem(
+                          value: 'userFeatures',
+                          child: Text('User features'),
+                        ),
                       if (widget.gateway is SupabaseAdminGateway)
                         const PopupMenuItem(
                           value: 'deletedAccounts',
@@ -4652,6 +4665,10 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
       client: (widget.gateway as SupabaseAdminGateway).client,
       canEdit: role == 'editor',
     ),
+    'userFeatures' => AdminUserBenefitsPage(
+      client: (widget.gateway as SupabaseAdminGateway).client,
+      canEdit: role == 'editor',
+    ),
     'sendNotifications' => AdminSendNotificationPage(
       gateway: SupabaseAdminNotificationGateway(
         (widget.gateway as SupabaseAdminGateway).client,
@@ -4704,6 +4721,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
       ('actionControls', Icons.tune),
       ('coinSettings', Icons.toll_outlined),
       if (widget.gateway is SupabaseAdminGateway) ...[
+        ('userFeatures', Icons.tune_outlined),
         ('sendNotifications', Icons.send_outlined),
         ('updates', Icons.system_update),
         ('deletedAccounts', Icons.inventory_2_outlined),
@@ -4800,7 +4818,9 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                                       ? Semantics(
                                           selected: selected == entry.$1,
                                           child: IconButton(
-                                            tooltip: entry.$1 == 'homeSlides'
+                                            tooltip: entry.$1 == 'userFeatures'
+                                                ? 'User features'
+                                                : entry.$1 == 'homeSlides'
                                                 ? 'Home slideshow'
                                                 : entry.$1 == 'updates'
                                                 ? 'App releases'
@@ -4834,7 +4854,9 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                                                 : const Color(0xffa6a3bf),
                                           ),
                                           title: Text(
-                                            entry.$1 == 'homeSlides'
+                                            entry.$1 == 'userFeatures'
+                                                ? 'User features'
+                                                : entry.$1 == 'homeSlides'
                                                 ? 'Home slideshow'
                                                 : entry.$1 == 'updates'
                                                 ? 'App releases'
@@ -4964,7 +4986,9 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                       ),
                       Expanded(
                         child: Text(
-                          selected == 'homeSlides'
+                          selected == 'userFeatures'
+                              ? 'User features'
+                              : selected == 'homeSlides'
                               ? 'Home slideshow'
                               : selected == 'operations'
                               ? 'Users Supports'

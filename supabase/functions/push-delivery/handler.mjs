@@ -3,6 +3,9 @@ const messages = {
   approved: ['Submission approved', 'Open Freelan Space to see your update.'],
   rejected: ['Submission reviewed', 'Open Freelan Space to see your update.'],
   coins_received: ['Coins received', 'Open Freelan Space to see your update.'],
+  saved_task_unavailable: ['Saved task unavailable', 'Open Freelan Space to find another task.'],
+  login_alert: ['New sign-in', 'A new sign-in to your Freelan Space account was recorded.'],
+  review_reminder: ['Submissions await review', 'Open Freelan Space to review your pending submissions.'],
   support_reply: ['Support replied', 'Open Freelan Space to see your update.'],
 };
 function equalSecret(a, b) {
@@ -27,7 +30,7 @@ export function createHandler({secret, workerSecret, claim, send, finish, contin
           const [title, body] = job.kind === 'admin_message' && typeof job.title === 'string' && typeof job.body === 'string'
             ? [job.title, job.body]
             : job.kind === 'coins_received' && Number.isInteger(job.amount) && job.amount > 0
-              ? ['Coins received', `${job.amount} coins credited to your Freelan Space wallet${({referral: ' as a referral bonus', welcome: ' as a welcome bonus', transfer_received: ' from a wallet transfer', admin_adjustment: ' by an administrator', purchase: ' from your purchase', refund: ' as a refund', task: ' for your task'})[job.source] ?? ''}.`]
+              ? ['Coins received', `${job.amount} coins credited to your Freelan Space wallet${({referral: ' as a referral bonus', welcome: ' as a welcome bonus', transfer_received: ' from a wallet transfer', admin_adjustment: ' by an administrator', purchase: ' from your purchase', refund: ' as a refund', task: ' for your task', daily_bonus: ' as a daily check-in bonus', badge_bonus: ' for a milestone'})[job.source] ?? ''}.`]
               : messages[job.kind] ?? ['Freelan Space', 'Open Freelan Space to see your update.'];
           outcome = await send(job.token, title, body, job.kind);
         } catch (_) { /* Leased jobs are retried on transient errors. */ }

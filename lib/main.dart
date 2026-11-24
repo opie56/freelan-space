@@ -1,3 +1,5 @@
+import 'more_user_benefits.dart';
+import 'user_benefits.dart';
 import 'user_page_canvas.dart';
 
 import 'dart:async';
@@ -468,6 +470,8 @@ const words = <String, List<String>>{
   'history': ['Coin history', 'Coin ചരിത്രം'],
   'emptyHistory': ['No transactions yet.', 'ഇതുവരെ ഇടപാടുകളില്ല.'],
   'welcomeReason': ['Welcome coins', 'സ്വാഗത coins'],
+  'dailyBonusReason': ['Daily check-in bonus', 'Daily check-in bonus'],
+  'badgeBonusReason': ['Achievement bonus', 'Achievement bonus'],
   'campaignReason': ['Campaign budget', 'Campaign ബജറ്റ്'],
   'taskReason': ['Task claim', 'Task സ്ഥിരീകരണം'],
   'refundReason': ['Campaign refund', 'Campaign refund'],
@@ -2259,6 +2263,21 @@ class NotificationsPage extends StatelessWidget {
                     'approved' => tr(context, 'notificationApproved'),
                     'rejected' => tr(context, 'notificationRejected'),
                     'support_reply' => tr(context, 'supportReply'),
+                    'saved_task_unavailable' => uf(
+                      context,
+                      'Saved task is no longer available',
+                      'Save ചെയ്ത task ഇപ്പോൾ ലഭ്യമല്ല',
+                    ),
+                    'login_alert' => uf(
+                      context,
+                      'New sign-in to your account',
+                      'നിങ്ങളുടെ അക്കൗണ്ടിൽ പുതിയ sign-in',
+                    ),
+                    'review_reminder' => uf(
+                      context,
+                      'Submissions await your review',
+                      'Submissions പരിശോധനയ്ക്കായി കാത്തിരിക്കുന്നു',
+                    ),
                     'coins_received' =>
                       '${tr(context, 'notificationCoins')}: +${item['amount']}',
                     _ => tr(context, 'notifications'),
@@ -2268,6 +2287,9 @@ class NotificationsPage extends StatelessWidget {
                       if (item['kind'] == 'admin_message' &&
                           item['body'] is String)
                         item['body'] as String,
+                      if (item['kind'] == 'saved_task_unavailable' &&
+                          item['saved_task_link'] is String)
+                        item['saved_task_link'] as String,
                       if (item['read_at'] == null)
                         tr(context, 'notificationUnread'),
                       if (DateTime.tryParse(
@@ -2395,6 +2417,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           ),
         ),
         uid: widget.user.id,
+        benefitsClient: db,
         slideshowGateway: HomeSlidesGateway(db),
         onReferrals: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
@@ -2517,6 +2540,7 @@ class Dashboard extends StatelessWidget {
     this.historyStream,
     this.onBrowseType,
     this.slideshowGateway,
+    this.benefitsClient,
     this.onReferrals,
     this.onCampaigns,
   });
@@ -2526,6 +2550,7 @@ class Dashboard extends StatelessWidget {
   final VoidCallback onBrowse;
   final VoidCallback? onReferrals, onCampaigns;
   final HomeSlidesGateway? slideshowGateway;
+  final SupabaseClient? benefitsClient;
   final String uid;
   @override
   Widget build(BuildContext context) => AppListView(
@@ -2536,6 +2561,15 @@ class Dashboard extends StatelessWidget {
         balanceStream: balanceStream,
         historyStream: historyStream,
       ),
+      if (benefitsClient != null) ...[
+        WeeklyCoinSummary(client: benefitsClient!),
+        RewardsAndGoal(client: benefitsClient!),
+        GuidedFirstTask(
+          client: benefitsClient!,
+          userId: uid,
+          onBrowse: onBrowse,
+        ),
+      ],
       const SizedBox(height: 20),
       HomeSlideshow(
         gateway: slideshowGateway,
@@ -3292,6 +3326,7 @@ class TaskList extends StatefulWidget {
     this.campaignsStream,
     this.claimsStream,
     this.loadSavedIds,
+    this.searchFeatureLoader,
     this.initialType = 'all',
     this.separatePage = false,
   });
@@ -3303,6 +3338,7 @@ class TaskList extends StatefulWidget {
       campaignsStream,
       claimsStream;
   final Future<List<String>> Function()? loadSavedIds;
+  final Future<bool> Function()? searchFeatureLoader;
   @override
   State<TaskList> createState() => _TaskListState();
 }
@@ -3316,6 +3352,9 @@ class _TaskListState extends State<TaskList> {
   Timer? campaignRefresh;
   final saved = <String>{};
   bool savedOnly = false, savedLoading = true, savedError = false;
+  bool searchEnabled = false;
+  String taskQuery = '', taskSort = 'newest';
+  final taskSearch = TextEditingController();
   final saving = <String>{};
   @override
   void initState() {
@@ -3323,6 +3362,18 @@ class _TaskListState extends State<TaskList> {
     configureOtherFeeds();
     configureCampaignFeed();
     loadSaved();
+    loadSearchFeature();
+  }
+
+  Future<void> loadSearchFeature() async {
+    try {
+      final enabled =
+          await (widget.searchFeatureLoader?.call() ??
+              benefitEnabled(db, 'task_search'));
+      if (mounted) setState(() => searchEnabled = enabled);
+    } catch (_) {
+      /* Existing task browsing remains available. */
+    }
   }
 
   void configureOtherFeeds() {
@@ -3380,6 +3431,7 @@ class _TaskListState extends State<TaskList> {
   @override
   void dispose() {
     campaignRefresh?.cancel();
+    taskSearch.dispose();
     super.dispose();
   }
 
@@ -3522,6 +3574,22 @@ class _TaskListState extends State<TaskList> {
             tasks,
             selectedType,
           ).where((task) => !savedOnly || saved.contains(task['id'])).toList();
+          if (searchEnabled) {
+            filteredTasks.removeWhere(
+              (task) => !('${task['link']} ${task['type']}'
+                  .toLowerCase()
+                  .contains(taskQuery.toLowerCase())),
+            );
+            filteredTasks.sort(
+              (a, b) => taskSort == 'reward'
+                  ? ((b['reward_per_task'] as num?) ?? 1).compareTo(
+                      (a['reward_per_task'] as num?) ?? 1,
+                    )
+                  : (b['createdAt']?.toString() ?? '').compareTo(
+                      a['createdAt']?.toString() ?? '',
+                    ),
+            );
+          }
           final history =
               mine
                   .where(
@@ -3659,6 +3727,39 @@ class _TaskListState extends State<TaskList> {
                 count: filteredTasks.length,
               ),
               const SizedBox(height: 10),
+              if (searchEnabled) ...[
+                TextField(
+                  controller: taskSearch,
+                  onChanged: (value) =>
+                      setState(() => taskQuery = value.trim()),
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search),
+                    labelText: uf(
+                      context,
+                      'Search task or link',
+                      'Task അല്ലെങ്കിൽ link തിരയുക',
+                    ),
+                  ),
+                ),
+                DropdownButton<String>(
+                  value: taskSort,
+                  items: [
+                    DropdownMenuItem(
+                      value: 'newest',
+                      child: Text(uf(context, 'Newest first', 'പുതിയവ ആദ്യം')),
+                    ),
+                    DropdownMenuItem(
+                      value: 'reward',
+                      child: Text(
+                        uf(context, 'Highest reward', 'കൂടുതൽ coins ആദ്യം'),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) setState(() => taskSort = value);
+                  },
+                ),
+              ],
               if (!widget.separatePage)
                 TaskTypePicker(
                   selected: selectedType,
@@ -3697,14 +3798,20 @@ class _TaskListState extends State<TaskList> {
               const SizedBox(height: 12),
               if (filteredTasks.isEmpty)
                 EarnEmptyState(
-                  title: tr(
-                    context,
-                    savedOnly
-                        ? 'emptySavedTasks'
-                        : selectedType == 'all'
-                        ? 'emptyTasks'
-                        : 'noFilteredTasks',
-                  ),
+                  title: taskQuery.isNotEmpty
+                      ? uf(
+                          context,
+                          'No tasks match your search.',
+                          'തിരച്ചിലിന് അനുയോജ്യമായ task ഇല്ല.',
+                        )
+                      : tr(
+                          context,
+                          savedOnly
+                              ? 'emptySavedTasks'
+                              : selectedType == 'all'
+                              ? 'emptyTasks'
+                              : 'noFilteredTasks',
+                        ),
                   subtitle:
                       savedOnly ||
                           (!widget.separatePage && selectedType != 'all')
@@ -3717,10 +3824,13 @@ class _TaskListState extends State<TaskList> {
                   actionLabel: tr(context, 'showAllTasks'),
                   onAction:
                       savedOnly ||
+                          taskQuery.isNotEmpty ||
                           (!widget.separatePage && selectedType != 'all')
                       ? () => setState(() {
                           if (!widget.separatePage) selectedType = 'all';
                           savedOnly = false;
+                          taskQuery = '';
+                          taskSearch.clear();
                         })
                       : null,
                 ),
@@ -4047,6 +4157,10 @@ class Campaigns extends StatefulWidget {
 }
 
 class _CampaignsState extends State<Campaigns> {
+  late final Future<bool> supportEnabled = benefitEnabled(
+    db,
+    'support_reference',
+  );
   String selectedStatus = 'all';
   Timer? clock;
   DateTime? scheduledDeadline;
@@ -4437,6 +4551,23 @@ class _CampaignsState extends State<Campaigns> {
                         Text(
                           '${requested - remaining}/$requested ${tr(context, 'claims')}',
                         ),
+                        if (widget.reviewsBuilder == null)
+                          FutureBuilder<bool>(
+                            future: supportEnabled,
+                            builder: (context, state) => state.data == true
+                                ? SupportReferenceButton(
+                                    client: db,
+                                    kind: 'campaign',
+                                    id: data['id'] as String,
+                                    enabledOverride: true,
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        if (widget.reviewsBuilder == null)
+                          CampaignInsights(
+                            client: db,
+                            campaignId: data['id'] as String,
+                          ),
                         widget.reviewsBuilder?.call(data['id'] as String) ??
                             PendingReviews(campaignId: data['id'] as String),
                         if (canCancel)
@@ -4538,6 +4669,7 @@ class CreateCampaign extends StatefulWidget {
     this.loadPlan,
     this.controls,
     this.reserve,
+    this.draftsClient,
     this.initialType = 'follow',
   }) : assert(
          initialType == 'follow' ||
@@ -4550,6 +4682,7 @@ class CreateCampaign extends StatefulWidget {
   final Future<CampaignPlan> Function()? loadPlan;
   final Stream<List<Map<String, dynamic>>>? controls;
   final String initialType;
+  final SupabaseClient? draftsClient;
   final Future<void> Function(String type, String link, int count, int reward)?
   reserve;
   @override
@@ -4736,6 +4869,7 @@ class _CreateCampaignState extends State<CreateCampaign> {
                   ],
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
+                    key: ValueKey('campaign_type_$type'),
                     isExpanded: true,
                     initialValue: type,
                     decoration: InputDecoration(
@@ -4781,6 +4915,7 @@ class _CreateCampaignState extends State<CreateCampaign> {
                         );
                       }
                       return DropdownButtonFormField<String>(
+                        key: ValueKey('campaign_user_$selectedUsername'),
                         initialValue: selectedUsername,
                         isExpanded: true,
                         decoration: InputDecoration(
@@ -4900,6 +5035,32 @@ class _CreateCampaignState extends State<CreateCampaign> {
                       trailing: const GrowthArt('coins', height: 52),
                     ),
                   ),
+                  if (widget.draftsClient != null ||
+                      (widget.reserve == null &&
+                          widget.loadRates == null &&
+                          widget.loadAccounts == null))
+                    CampaignDraftControls(
+                      client: widget.draftsClient ?? db,
+                      current: () => {
+                        'kind': type,
+                        'link': link.text.trim(),
+                        'username': selectedUsername ?? '',
+                        'count': int.tryParse(count.text),
+                      },
+                      restore: (draft) async {
+                        final existing = await accounts;
+                        if (!mounted) return;
+                        setState(() {
+                          type = draft['kind'] as String;
+                          link.text = draft['link'] as String;
+                          count.text = '${draft['task_count']}';
+                          final username = draft['username'] as String;
+                          selectedUsername = existing.contains(username)
+                              ? username
+                              : null;
+                        });
+                      },
+                    ),
                   const Notice(),
                   const SizedBox(height: 14),
                   GrowthPrimaryButton(
@@ -4962,6 +5123,10 @@ class CoinHistoryPage extends StatefulWidget {
 }
 
 class _CoinHistoryPageState extends State<CoinHistoryPage> {
+  late final Future<bool> supportEnabled = benefitEnabled(
+    db,
+    'support_reference',
+  );
   String filter = 'all';
   @override
   Widget build(BuildContext context) => UserPageScaffold(
@@ -4981,6 +5146,7 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
           background: 'coins_background',
         ),
         const SizedBox(height: 8),
+        if (widget.historyStream == null) WalletStatementButton(client: db),
         Wrap(
           spacing: 8,
           children: [
@@ -5059,6 +5225,8 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
                       final amount = data['amount'] as int;
                       final reason = switch (data['reason']) {
                         'welcome' => 'welcomeReason',
+                        'daily_bonus' => 'dailyBonusReason',
+                        'badge_bonus' => 'badgeBonusReason',
                         'campaign' => 'campaignReason',
                         'task' => 'taskReason',
                         'refund' => 'refundReason',
@@ -5070,34 +5238,57 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
                         _ => 'history',
                       };
                       return Card(
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: amount > 0
-                                ? const Color(0xffe2f3e9)
-                                : const Color(0xffffece2),
-                            child: Icon(
-                              amount > 0
-                                  ? Icons.south_west_rounded
-                                  : Icons.north_east_rounded,
-                              color: amount > 0
-                                  ? const Color(0xff268258)
-                                  : const Color(0xffa85a38),
-                              size: 19,
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: amount > 0
+                                    ? const Color(0xffe2f3e9)
+                                    : const Color(0xffffece2),
+                                child: Icon(
+                                  amount > 0
+                                      ? Icons.south_west_rounded
+                                      : Icons.north_east_rounded,
+                                  color: amount > 0
+                                      ? const Color(0xff268258)
+                                      : const Color(0xffa85a38),
+                                  size: 19,
+                                ),
+                              ),
+                              title: Text(tr(context, reason)),
+                              subtitle: data['reference_id'] is String
+                                  ? SelectableText(
+                                      '${uf(context, 'Reference ID', 'Reference ID')}: ${data['reference_id']}',
+                                    )
+                                  : null,
+                              trailing: Text(
+                                '${amount > 0 ? '+' : ''}$amount',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: amount > 0
+                                      ? Colors.green.shade700
+                                      : null,
+                                ),
+                              ),
                             ),
-                          ),
-                          title: Text(tr(context, reason)),
-                          subtitle: data['reference_id'] is String
-                              ? SelectableText(
-                                  '${uf(context, 'Reference ID', 'Reference ID')}: ${data['reference_id']}',
-                                )
-                              : null,
-                          trailing: Text(
-                            '${amount > 0 ? '+' : ''}$amount',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: amount > 0 ? Colors.green.shade700 : null,
-                            ),
-                          ),
+                            if (widget.historyStream == null &&
+                                data['id'] is String)
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: FutureBuilder<bool>(
+                                  future: supportEnabled,
+                                  builder: (context, state) =>
+                                      state.data == true
+                                      ? SupportReferenceButton(
+                                          client: db,
+                                          kind: 'transaction',
+                                          id: data['id'] as String,
+                                          enabledOverride: true,
+                                        )
+                                      : const SizedBox.shrink(),
+                                ),
+                              ),
+                          ],
                         ),
                       );
                     },
@@ -7464,6 +7655,8 @@ class _UserSettingsPageState extends State<UserSettingsPage>
                 ),
               ),
             ),
+            if (widget.enabledLoader == null)
+              NotificationPreferences(client: db),
             Card(
               child: SwitchListTile(
                 secondary: const GrowthIcon(Icons.notifications_active),

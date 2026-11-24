@@ -75,7 +75,7 @@ test('full batch immediately schedules the next batch', async () => {
 });
 
 test('every wallet credit push includes its amount and source, without personal details', async () => {
-  const sources = ['referral', 'welcome', 'transfer_received', 'admin_adjustment', 'purchase', 'refund', 'task', 'future_source'];
+  const sources = ['referral', 'welcome', 'transfer_received', 'admin_adjustment', 'purchase', 'refund', 'task', 'daily_bonus', 'badge_bonus', 'future_source'];
   const sent = [];
   const handler = createHandler({secret: 'synthetic', claim: async () => sources.map(source => ({job_id: source, lease_id: 'lease', token: 'token', kind: 'coins_received', amount: 42, source})),
     send: async (_token, title, body, kind) => { sent.push({title, body, kind}); return {success: true, permanent: false}; }, finish: async () => {}});
@@ -86,4 +86,22 @@ test('every wallet credit push includes its amount and source, without personal 
   assert.match(sent[0].body, /referral bonus/);
   assert.match(sent[2].body, /wallet transfer/);
   assert.match(sent[3].body, /administrator/);
+  assert.match(sent[7].body, /daily check-in bonus/);
+  assert.match(sent[8].body, /milestone/);
+});
+
+test('review reminder prompts the campaign owner to review', async () => {
+  const sent=[];
+  const handler=createHandler({secret:'synthetic',claim:async()=>[{job_id:'j',lease_id:'l',token:'token',kind:'review_reminder'}],send:async(_token,title,body)=>{sent.push({title,body});return {success:true,permanent:false};},finish:async()=>{}});
+  await handler(new Request('https://worker.test',{method:'POST',headers:{authorization:'Bearer synthetic'}}));
+  assert.match(sent[0].title, /review/i);
+  assert.match(sent[0].body, /pending submissions/i);
+});
+
+test('saved-task and login alerts have clear messages', async () => {
+ const sent=[];
+ const handler=createHandler({secret:'local-secret',claim:async()=>['saved_task_unavailable','login_alert'].map(kind=>({job_id:kind,lease_id:'l',token:'synthetic',kind})),send:async(_token,title,body,kind)=>{sent.push({title,body,kind});return {success:true,permanent:false}},finish:async()=>{}});
+ await handler(new Request('https://worker.test',{method:'POST',headers:{authorization:'Bearer local-secret'}}));
+ assert.match(sent[0].title,/saved task/i);
+ assert.match(sent[1].title,/sign-in/i);
 });
