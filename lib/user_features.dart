@@ -1,3 +1,4 @@
+import 'user_benefits.dart';
 import 'user_page_canvas.dart';
 
 import 'package:flutter/material.dart';
@@ -30,11 +31,62 @@ class _SubmissionHistoryPageState extends State<SubmissionHistoryPage> {
   String? status;
   DateTimeRange? range;
   int offset = 0;
+  bool appealsEnabled = false;
   late Future<List<dynamic>> data;
   @override
   void initState() {
     super.initState();
     load();
+    loadAppeals();
+  }
+
+  Future<void> loadAppeals() async {
+    try {
+      final enabled = await benefitEnabled(widget.client, 'submission_appeals');
+      if (mounted) setState(() => appealsEnabled = enabled);
+    } catch (_) {
+      /* History remains available. */
+    }
+  }
+
+  Future<void> appeal(String submissionId) async {
+    final message = await showDialog<String>(
+      context: context,
+      builder: (context) => const _AppealDialog(),
+    );
+    if (message == null || !mounted) return;
+    try {
+      await widget.client.rpc(
+        'appeal_submission',
+        params: {'p_submission': submissionId, 'p_message': message},
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            uf(
+              context,
+              'Appeal sent. Follow it in Support.',
+              'Appeal അയച്ചു. Support-ൽ മറുപടി കാണാം.',
+            ),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              uf(
+                context,
+                'Unable to send appeal. It may already exist.',
+                'Appeal അയയ്ക്കാനായില്ല. ഇതിനകം അയച്ചതാകാം.',
+              ),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -257,6 +309,18 @@ class _SubmissionHistoryPageState extends State<SubmissionHistoryPage> {
                                       subtitle: Text(
                                         '${r['campaign_link']}\n${r['submitted_at']}${r['rejection_reason'] == null ? '' : '\n${uf(c, 'Reason', 'കാരണം')}: ${r['rejection_reason']}'}',
                                       ),
+                                      trailing:
+                                          appealsEnabled &&
+                                              r['status'] == 'rejected'
+                                          ? TextButton(
+                                              onPressed: () => appeal(
+                                                r['submission_id'] as String,
+                                              ),
+                                              child: Text(
+                                                uf(c, 'Appeal', 'Appeal'),
+                                              ),
+                                            )
+                                          : null,
                                     ),
                                   );
                                 },
@@ -448,4 +512,57 @@ class UserHelpPage extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AppealDialog extends StatefulWidget {
+  const _AppealDialog();
+  @override
+  State<_AppealDialog> createState() => _AppealDialogState();
+}
+
+class _AppealDialogState extends State<_AppealDialog> {
+  final message = TextEditingController();
+  @override
+  void dispose() {
+    message.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(uf(context, 'Appeal rejection', 'Rejection appeal')),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          uf(
+            context,
+            'Explain why the decision should be reviewed. The original screenshot is removed after review.',
+            'തീരുമാനം വീണ്ടും പരിശോധിക്കേണ്ട കാരണം എഴുതുക. Review കഴിഞ്ഞാൽ ആദ്യ screenshot നീക്കം ചെയ്യപ്പെടും.',
+          ),
+        ),
+        TextField(
+          controller: message,
+          maxLength: 1500,
+          maxLines: 4,
+          decoration: InputDecoration(
+            labelText: uf(context, 'Your message', 'നിങ്ങളുടെ സന്ദേശം'),
+          ),
+        ),
+      ],
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: Text(uf(context, 'Cancel', 'റദ്ദാക്കുക')),
+      ),
+      FilledButton(
+        onPressed: () {
+          final text = message.text.trim();
+          if (text.isNotEmpty) Navigator.pop(context, text);
+        },
+        child: Text(uf(context, 'Send', 'അയയ്ക്കുക')),
+      ),
+    ],
+  );
 }
