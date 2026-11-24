@@ -48,6 +48,12 @@
                 <!-- Retain old links already sent to users during the transition. -->
                 <data android:scheme="io.supabase.growthcircle" android:host="login-callback" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="space.freelan.app" android:host="referral" />
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

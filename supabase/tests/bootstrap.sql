@@ -13,6 +13,9 @@ create table auth.users (
  reauthentication_sent_at timestamptz,
  raw_user_meta_data jsonb default '{}'::jsonb
 );
+-- Synthetic Auth sessions: disposable tests only; not provider objects.
+create table auth.sessions (id uuid primary key, user_id uuid references auth.users(id) on delete cascade, created_at timestamptz default now(), refreshed_at timestamp, user_agent text);
+create table auth.refresh_tokens (id bigint generated always as identity primary key, session_id uuid references auth.sessions(id) on delete cascade);
 create table auth.one_time_tokens (
  user_id uuid references auth.users(id) on delete cascade,
  token_type text not null,
