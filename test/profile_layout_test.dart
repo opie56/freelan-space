@@ -56,17 +56,6 @@ class FakeProfileGateway
   }
 
   @override
-  Future<String> searchInstagram(String username) async {
-    if (username == 'business') return 'business';
-    throw const InstagramLookupException('not_found_or_unsupported');
-  }
-
-  @override
-  Future<void> removeAccount(String username) async {
-    usernames.remove(username);
-  }
-
-  @override
   Future<void> applyReferral(String code) async {
     if (code == 'other-code') joined = true;
   }
@@ -330,10 +319,16 @@ void main() {
     );
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
-    expect(find.text('@second'), findsOneWidget);
-    await tester.tap(find.byTooltip('Remove').first);
+    expect(gateway.usernames, ['first']);
+    expect(
+      find.textContaining('Only add your own Instagram account'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text(words['yesConfirm']![0]));
     await tester.pumpAndSettle();
-    expect(gateway.usernames, ['second']);
+    expect(find.text('@second'), findsOneWidget);
+    expect(find.byTooltip('Remove'), findsNothing);
+    expect(gateway.usernames, ['first', 'second']);
     await tester.pageBack();
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('profile_referral_banner')));
@@ -470,95 +465,26 @@ void main() {
     await tester.ensureVisible(find.text(words['releasePin']![1]));
     expect(tester.takeException(), isNull);
   });
-  testWidgets(
-    'inline Instagram search carries the query and still requires confirmation',
-    (tester) async {
-      final gateway = FakeProfileGateway();
-      await showProfile(tester, gateway);
-      await tester.ensureVisible(find.text('Instagram accounts'));
-      await tester.tap(find.text('Instagram accounts'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'business');
-      await tester.tap(find.byTooltip('Search Instagram username'));
-      await tester.pumpAndSettle();
-      expect(find.widgetWithText(ListTile, '@business'), findsOneWidget);
-      expect(gateway.usernames, ['first']);
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-      expect(gateway.usernames, ['first']);
-      expect(tester.takeException(), isNull);
-    },
-  );
-  testWidgets(
-    'in-app lookup adds only a selected real result and preserves manual entry',
-    (tester) async {
-      final gateway = FakeProfileGateway();
-      await showProfile(tester, gateway);
-      await tester.ensureVisible(find.text('Instagram accounts'));
-      await tester.tap(find.text('Instagram accounts'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Search Instagram username'));
-      await tester.pumpAndSettle();
-      expect(find.text(words['instagramSearchHelp']![0]), findsOneWidget);
-      expect(
-        tester
-            .widget<FilledButton>(
-              find.widgetWithText(FilledButton, 'Add account'),
-            )
-            .onPressed,
-        isNull,
-      );
-      await tester.enterText(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.byType(TextField),
-        ),
-        'unknown',
-      );
-      await tester.tap(find.text('Search'));
-      await tester.pumpAndSettle();
-      expect(find.text(words['instagramSearchNotFound']![0]), findsOneWidget);
-      await tester.enterText(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.byType(TextField),
-        ),
-        '@business',
-      );
-      await tester.tap(find.text('Search'));
-      await tester.pumpAndSettle();
-      expect(find.widgetWithText(ListTile, '@business'), findsOneWidget);
-      expect(find.text(words['instagramSearchOwnership']![0]), findsOneWidget);
-      await tester.enterText(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.byType(TextField),
-        ),
-        'other',
-      );
-      await tester.pump();
-      expect(
-        tester
-            .widget<FilledButton>(
-              find.widgetWithText(FilledButton, 'Add account'),
-            )
-            .onPressed,
-        isNull,
-      );
-      await tester.enterText(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.byType(TextField),
-        ),
-        'business',
-      );
-      await tester.tap(find.text('Search'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Add account'));
-      await tester.pumpAndSettle();
-      expect(gateway.usernames, ['first', 'business']);
-      expect(find.text('@business'), findsOneWidget);
-      expect(find.text('Add Instagram username manually'), findsOneWidget);
-    },
-  );
+  testWidgets('manual entry requires confirmation and has one add button', (
+    tester,
+  ) async {
+    final gateway = FakeProfileGateway()..usernames.clear();
+    await showProfile(tester, gateway);
+    await tester.ensureVisible(find.text('Instagram accounts'));
+    await tester.tap(find.text('Instagram accounts'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add Instagram username manually'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.byTooltip('Search Instagram username'), findsNothing);
+    await tester.tap(find.text('Add Instagram username manually'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '@example');
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('cannot be edited or deleted'), findsOneWidget);
+    expect(gateway.usernames, isEmpty);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(gateway.usernames, isEmpty);
+  });
 }
