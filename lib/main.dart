@@ -239,8 +239,8 @@ const words = <String, List<String>>{
   'browse': ['Browse tasks', 'Task-ുകൾ കാണുക'],
   'create': ['Create campaign', 'Campaign തുടങ്ങുക'],
   'disclaimer': [
-    'Tasks are reviewed by campaign owners or administrators. Instagram activity is not automatically verified or guaranteed.',
-    'Task campaign ഉടമയോ administrator-ഓ പരിശോധിക്കും. Instagram പ്രവർത്തനം സ്വയമേവ പരിശോധിക്കുകയോ ഉറപ്പുനൽകുകയോ ചെയ്യുന്നില്ല.',
+    'Every campaign task is reviewed before coins are awarded.',
+    'Coins ലഭിക്കുന്നതിന് മുമ്പ് ഓരോ campaign task-ഉം പരിശോധിക്കും.',
   ],
   'allTasks': ['All', 'എല്ലാം'],
   'noFilteredTasks': [
@@ -264,8 +264,8 @@ const words = <String, List<String>>{
   'submitProof': ['Submit for review', 'പരിശോധനയ്ക്ക് അയയ്ക്കുക'],
   'proofTitle': ['Submit your task', 'Task പരിശോധനയ്ക്ക് അയയ്ക്കുക'],
   'proofInfo': [
-    'Enter your Instagram username and choose a screenshot. The campaign owner or an administrator will review it before you earn coins.',
-    'Instagram username-ഉം screenshot-ഉം നൽകുക. Campaign ഉടമയോ administrator-ഓ പരിശോധിച്ച ശേഷമേ coin ലഭിക്കൂ.',
+    'Select your Instagram account and choose a screenshot. Your submission will be reviewed before you earn coins.',
+    'Instagram account-ഉം screenshot-ഉം തിരഞ്ഞെടുക്കുക. പരിശോധനയ്ക്ക് ശേഷം coins ലഭിക്കും.',
   ],
   'proofHandle': ['Instagram username', 'Instagram username'],
   'proofSelect': ['Choose screenshot', 'Screenshot തിരഞ്ഞെടുക്കുക'],
@@ -2818,6 +2818,12 @@ class Dashboard extends StatelessWidget {
   Widget build(BuildContext context) => AppListView(
     padding: const EdgeInsets.fromLTRB(14, 4, 14, 16),
     children: [
+      HomeSlideshow(
+        gateway: slideshowGateway,
+        onReferral: onReferrals,
+        onEarnings: onBrowse,
+      ),
+      const SizedBox(height: 14),
       BalanceCard(
         uid: uid,
         balanceStream: balanceStream,
@@ -2841,69 +2847,10 @@ class Dashboard extends StatelessWidget {
         ),
       ],
       const SizedBox(height: 20),
-      HomeSlideshow(
-        gateway: slideshowGateway,
-        onReferral: onReferrals,
-        onEarnings: onBrowse,
-      ),
       GettingStarted(onBrowse: onBrowse, onCampaigns: onCampaigns),
-      const SizedBox(height: 14),
-      Text(
-        tr(context, 'welcome'),
-        style: const TextStyle(
-          fontSize: 23,
-          height: 1.25,
-          fontWeight: FontWeight.w800,
-          color: growthInk,
-        ),
-      ),
-      const SizedBox(height: 6),
-      Text(
-        tr(context, 'homeDesc'),
-        style: const TextStyle(
-          fontSize: 12,
-          height: 1.5,
-          color: Color(0xff6d6580),
-        ),
-      ),
       const SizedBox(height: 16),
-      for (final pair in [
-        ['like', 'comment'],
-        ['share', 'follow'],
-      ]) ...[
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var index = 0; index < pair.length; index++) ...[
-                if (index > 0) const SizedBox(width: 10),
-                Expanded(child: taskTile(context, pair[index])),
-              ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-      ],
-      const SizedBox(height: 14),
-      const Notice(
-        refined: true,
-        text: 'Every campaign task and Instagram activity is reviewed and verified by AI with a 100% guarantee.',
-      ),
+      const Notice(refined: true),
     ],
-  );
-
-  Widget taskTile(BuildContext context, String type) => DashboardTaskTile(
-    icon: actionIcon(type),
-    title: tr(context, type),
-    subtitle: taskDescription(context, type),
-    accent: taskAccent(type),
-    onTap: () {
-      if (onBrowseType != null) {
-        onBrowseType!(type);
-      } else {
-        onBrowse();
-      }
-    },
   );
 }
 
@@ -3090,7 +3037,9 @@ class ClaimSubmissionDialog extends StatefulWidget {
     required this.onSubmit,
     this.picker,
     this.featureClient,
+    this.loadAccounts,
   });
+  final Future<List<String>> Function()? loadAccounts;
   final Future<void> Function(String handle, ClaimProof proof) onSubmit;
   final ProofPicker? picker;
   final SupabaseClient? featureClient;
@@ -3099,13 +3048,15 @@ class ClaimSubmissionDialog extends StatefulWidget {
 }
 
 class _ClaimSubmissionDialogState extends State<ClaimSubmissionDialog> {
-  final handle = TextEditingController();
+  String? handle;
+  List<String>? accounts;
   ClaimProof? proof;
-  bool busy = false, editingEnabled = false;
+  bool busy = false, editingEnabled = false, accountsFailed = false;
   String? error;
   @override
   void initState() {
     super.initState();
+    loadAccounts();
     final client = widget.featureClient;
     if (client != null) {
       benefitEnabled(client, 'screenshot_editing')
@@ -3116,10 +3067,32 @@ class _ClaimSubmissionDialogState extends State<ClaimSubmissionDialog> {
     }
   }
 
-  @override
-  void dispose() {
-    handle.dispose();
-    super.dispose();
+  Future<void> loadAccounts() async {
+    try {
+      final client = widget.featureClient;
+      final values = widget.loadAccounts != null
+          ? await widget.loadAccounts!()
+          : client == null || client.auth.currentUser == null
+          ? <String>[]
+          : [
+              for (final row
+                  in await client
+                      .from('instagram_accounts')
+                      .select('username')
+                      .eq('user_id', client.auth.currentUser!.id)
+                      .order('created_at'))
+                row['username'] as String,
+            ];
+      if (mounted) {
+        setState(() {
+          accounts = values;
+          accountsFailed = false;
+          if (values.length == 1) handle = values.first;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => accountsFailed = true);
+    }
   }
 
   Future<void> pick() async {
@@ -3139,8 +3112,8 @@ class _ClaimSubmissionDialogState extends State<ClaimSubmissionDialog> {
   }
 
   Future<void> submit() async {
-    final value = handle.text.trim().replaceFirst(RegExp(r'^@'), '');
-    if (!RegExp(r'^[A-Za-z0-9._]{1,30}$').hasMatch(value)) {
+    final value = handle;
+    if (value == null || accounts == null || !accounts!.contains(value)) {
       setState(() => error = tr(context, 'proofBadHandle'));
       return;
     }
@@ -3148,6 +3121,32 @@ class _ClaimSubmissionDialogState extends State<ClaimSubmissionDialog> {
       setState(() => error = tr(context, 'proofRequired'));
       return;
     }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          uf(context, 'Confirm submission', 'Submission സ്ഥിരീകരിക്കുക'),
+        ),
+        content: Text(
+          uf(
+            context,
+            'Submit this screenshot for @$value?',
+            '@$value-നായി ഈ screenshot സമർപ്പിക്കണോ?',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(tr(context, 'cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(tr(context, 'yesConfirm')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted || busy) return;
     setState(() {
       busy = true;
       error = null;
@@ -3172,18 +3171,53 @@ class _ClaimSubmissionDialogState extends State<ClaimSubmissionDialog> {
         children: [
           Text(tr(context, 'proofInfo')),
           const SizedBox(height: 16),
-          TextField(
-            key: const Key('proof_handle'),
-            controller: handle,
-            enabled: !busy,
-            maxLength: 31,
-            autocorrect: false,
-            textCapitalization: TextCapitalization.none,
-            decoration: InputDecoration(
-              labelText: tr(context, 'proofHandle'),
-              hintText: '@username',
+          if (accountsFailed)
+            TextButton(
+              onPressed: loadAccounts,
+              child: Text(
+                uf(
+                  context,
+                  'Unable to load accounts. Retry',
+                  'Accounts ലഭിച്ചില്ല. വീണ്ടും ശ്രമിക്കുക',
+                ),
+              ),
+            )
+          else if (accounts == null)
+            const Center(child: CircularProgressIndicator())
+          else if (accounts!.isEmpty)
+            Text(
+              uf(
+                context,
+                'Add an Instagram account in Profile first.',
+                'ആദ്യം Profile-ൽ Instagram account ചേർക്കുക.',
+              ),
+            )
+          else
+            DropdownButtonFormField<String>(
+              key: const Key('proof_handle'),
+              initialValue: handle,
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: tr(context, 'proofHandle'),
+              ),
+              items: [
+                for (final account in accounts!)
+                  DropdownMenuItem(value: account, child: Text('@$account')),
+              ],
+              onChanged: busy
+                  ? null
+                  : (value) => setState(() => handle = value),
             ),
+          const SizedBox(height: 12),
+          Text(
+            uf(
+              context,
+              'Submit only genuine screenshots. Misleading submissions may be rejected.',
+              'യഥാർത്ഥ screenshot മാത്രം സമർപ്പിക്കുക. തെറ്റിദ്ധരിപ്പിക്കുന്ന submissions നിരസിക്കാം.',
+            ),
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
+          const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: busy ? null : pick,
             icon: const Icon(Icons.photo_library_outlined),
@@ -6085,188 +6119,222 @@ class _ReleasePinDialogState extends State<ReleasePinDialog> {
     ),
   );
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
-    titlePadding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-    contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-    actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-    backgroundColor: const Color(0xfff8f5ff),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-    title: Stack(
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Image.asset(
-              'assets/design/pin_shield.png',
-              height: widget.setup ? 105 : 78,
-              excludeFromSemantics: true,
-            ),
-            Text(
-              tr(
-                context,
-                widget.setup
-                    ? (widget.changing ? 'changePin' : 'setupPin')
-                    : 'releasePin',
+  Widget build(BuildContext context) {
+    final dialog = AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+      titlePadding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      backgroundColor: const Color(0xfff8f5ff),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      title: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Image.asset(
+                'assets/design/pin_shield.png',
+                height: widget.setup ? 105 : 78,
+                excludeFromSemantics: true,
               ),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: growthInk,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (widget.setup)
               Text(
-                uf(
+                tr(
                   context,
-                  'Keep your account more secure',
-                  'നിങ്ങളുടെ account കൂടുതൽ സുരക്ഷിതമാക്കുക',
+                  widget.setup
+                      ? (widget.changing ? 'changePin' : 'setupPin')
+                      : 'releasePin',
                 ),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.normal,
+                  color: growthInk,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-          ],
-        ),
-        Positioned(
-          right: 0,
-          top: 0,
-          child: IconButton(
-            tooltip: tr(context, 'cancel'),
-            onPressed: busy ? null : () => Navigator.pop(context),
-            icon: const Icon(Icons.close),
-          ),
-        ),
-      ],
-    ),
-    content: SizedBox(
-      width: 360,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            if (!widget.setup)
-              Text(
-                tr(context, 'enterPin'),
-                style: const TextStyle(fontSize: 11),
-              ),
-            if (widget.setup) ...[
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.mail_outline),
-                  onPressed: busy || cooldown > 0 || widget.sendOtp == null
-                      ? null
-                      : () async {
-                          setState(() {
-                            busy = true;
-                            error = null;
-                          });
-                          try {
-                            await widget.sendOtp!();
-                            if (mounted) {
-                              setState(() {
-                                otpSent = true;
-                                cooldown = 60;
-                              });
-                              otpTimer?.cancel();
-                              otpTimer = Timer.periodic(
-                                const Duration(seconds: 1),
-                                (timer) {
-                                  if (!mounted) {
-                                    timer.cancel();
-                                    return;
-                                  }
-                                  setState(() => cooldown--);
-                                  if (cooldown == 0) timer.cancel();
-                                },
-                              );
-                            }
-                          } catch (e) {
-                            if (mounted) {
-                              setState(() => error = friendlyError(context, e));
-                            }
-                          } finally {
-                            if (mounted) setState(() => busy = false);
-                          }
-                        },
-                  label: Text(
-                    '${tr(context, 'sendPinOtp')}${cooldown > 0 ? ' ($cooldown)' : ''}',
+              if (widget.setup)
+                Text(
+                  uf(
+                    context,
+                    'Keep your account more secure',
+                    'നിങ്ങളുടെ account കൂടുതൽ സുരക്ഷിതമാക്കുക',
                   ),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: const Color(0xffe9def9),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+            ],
+          ),
+          if (!widget.setup)
+            Positioned(
+              right: 0,
+              top: 0,
+              child: IconButton(
+                tooltip: tr(context, 'cancel'),
+                onPressed: busy ? null : () => Navigator.pop(context),
+                icon: const Icon(Icons.close),
+              ),
+            ),
+        ],
+      ),
+      content: SizedBox(
+        width: 360,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              if (!widget.setup)
+                Text(
+                  tr(context, 'enterPin'),
+                  style: const TextStyle(fontSize: 11),
+                ),
+              if (widget.setup) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.mail_outline),
+                    onPressed: busy || cooldown > 0 || widget.sendOtp == null
+                        ? null
+                        : () async {
+                            setState(() {
+                              busy = true;
+                              error = null;
+                            });
+                            try {
+                              await widget.sendOtp!();
+                              if (mounted) {
+                                setState(() {
+                                  otpSent = true;
+                                  cooldown = 60;
+                                });
+                                otpTimer?.cancel();
+                                otpTimer = Timer.periodic(
+                                  const Duration(seconds: 1),
+                                  (timer) {
+                                    if (!mounted) {
+                                      timer.cancel();
+                                      return;
+                                    }
+                                    setState(() => cooldown--);
+                                    if (cooldown == 0) timer.cancel();
+                                  },
+                                );
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                setState(
+                                  () => error = friendlyError(context, e),
+                                );
+                              }
+                            } finally {
+                              if (mounted) setState(() => busy = false);
+                            }
+                          },
+                    label: Text(
+                      '${tr(context, 'sendPinOtp')}${cooldown > 0 ? ' ($cooldown)' : ''}',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: const Color(0xffe9def9),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              if (otpSent) Text(tr(context, 'otpSentPin')),
-              TextField(
-                controller: current,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(6),
-                ],
-                decoration: InputDecoration(
-                  labelText: tr(context, 'otp'),
-                  prefixIcon: const Icon(
-                    Icons.lock_outline,
-                    color: growthPurple,
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide.none,
+                const SizedBox(height: 8),
+                if (otpSent) Text(tr(context, 'otpSentPin')),
+                TextField(
+                  controller: current,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: tr(context, 'otp'),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline,
+                      color: growthPurple,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
+                const SizedBox(height: 8),
+              ],
+              pinField(pin, widget.setup ? 'newPin' : 'releasePin'),
+              if (widget.setup) ...[
+                const SizedBox(height: 8),
+                pinField(confirm, 'confirmPin', confirmation: true),
+              ],
+              if (error != null)
+                Text(
+                  error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
             ],
-            pinField(pin, widget.setup ? 'newPin' : 'releasePin'),
-            if (widget.setup) ...[
-              const SizedBox(height: 8),
-              pinField(confirm, 'confirmPin', confirmation: true),
-            ],
-            if (error != null)
-              Text(
-                error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-          ],
+          ),
         ),
       ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: busy ? null : () => Navigator.pop(context),
-        style: TextButton.styleFrom(
-          side: const BorderSide(color: Color(0xffa68ccf)),
-          shape: const StadiumBorder(),
-          padding: const EdgeInsets.symmetric(horizontal: 28),
+      actions: [
+        TextButton(
+          onPressed: busy ? null : () => Navigator.pop(context),
+          style: TextButton.styleFrom(
+            side: const BorderSide(color: Color(0xffa68ccf)),
+            shape: const StadiumBorder(),
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+          ),
+          child: Text(tr(context, 'cancel')),
         ),
-        child: Text(tr(context, 'cancel')),
+        SizedBox(
+          width: 125,
+          child: GrowthPrimaryButton(
+            onPressed: busy ? null : submit,
+            label: tr(context, widget.setup ? 'save' : 'yesConfirm'),
+          ),
+        ),
+      ],
+    );
+    if (!widget.setup) return dialog;
+    return Scaffold(
+      backgroundColor: const Color(0xfff8f5ff),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: Text(tr(context, widget.changing ? 'changePin' : 'setupPin')),
       ),
-      SizedBox(
-        width: 125,
-        child: GrowthPrimaryButton(
-          onPressed: busy ? null : submit,
-          label: tr(context, widget.setup ? 'save' : 'yesConfirm'),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: ListView(
+              padding: const EdgeInsets.all(24),
+              children: [
+                dialog.title!,
+                dialog.content!,
+                const SizedBox(height: 16),
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: dialog.actions!,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
-    ],
-  );
+    );
+  }
 }
 
 class ProfileInfo {
@@ -6469,13 +6537,15 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
   }
 
   Future<void> openPin(bool pinSet) async {
-    final result = await showDialog<String>(
-      context: context,
-      builder: (_) => ReleasePinDialog(
-        setup: true,
-        changing: pinSet,
-        savePin: gateway.setPin,
-        sendOtp: gateway.sendPinOtp,
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReleasePinDialog(
+          setup: true,
+          changing: pinSet,
+          savePin: gateway.setPin,
+          sendOtp: gateway.sendPinOtp,
+        ),
       ),
     );
     if (result == 'ok' && mounted) {

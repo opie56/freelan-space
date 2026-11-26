@@ -96,58 +96,6 @@ void main() {
     });
 
     testWidgets(
-      'home task cards select every category at large text in $locale',
-      (tester) async {
-        tester.view.physicalSize = const Size(320, 640);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-        final selected = <String>[];
-        await tester.pumpWidget(
-          MaterialApp(
-            locale: Locale(locale),
-            supportedLocales: const [Locale('en'), Locale('ml')],
-            localizationsDelegates: GlobalMaterialLocalizations.delegates,
-            theme: growthTheme(),
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context)
-                  .copyWith(textScaler: const TextScaler.linear(2)),
-              child: child!,
-            ),
-            home: Scaffold(
-              body: Dashboard(
-                uid: 'sample',
-                balanceStream: Stream.value([
-                  {'balance': 4},
-                ]),
-                onBrowse: () {},
-                onBrowseType: selected.add,
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-        for (final type in ['like', 'comment', 'share', 'follow']) {
-          final tile = find.byWidgetPredicate(
-            (w) =>
-                w is DashboardTaskTile &&
-                w.title == words[type]![locale == 'ml' ? 1 : 0],
-          );
-          await tester.scrollUntilVisible(
-            tile,
-            180,
-            scrollable: find.byType(Scrollable).first,
-          );
-          await tester.pumpAndSettle();
-          await tester.tap(tile);
-          await tester.pump();
-        }
-        expect(selected, ['like', 'comment', 'share', 'follow']);
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets(
       'profile information and actions remain reachable at large text in $locale',
       (tester) async {
         tester.view.physicalSize = const Size(320, 640);

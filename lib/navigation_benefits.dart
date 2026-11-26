@@ -1,3 +1,5 @@
+import 'reward_design.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -53,13 +55,16 @@ class _CouponEntryState extends State<CouponEntry> {
       if (mounted) {
         setState(
           () => message = r['status'] == 'ok'
-              ? '${r['amount']} ${nt(context, 'coins credited', 'coins ലഭിച്ചു')}'
+              ? null
               : nt(
                   context,
                   'Code unavailable, used or limit reached.',
                   'Code ലഭ്യമല്ല, ഉപയോഗിച്ചു, അല്ലെങ്കിൽ limit കഴിഞ്ഞു.',
                 ),
         );
+        if (r['status'] == 'ok') {
+          await showCoinCreditSuccess(context, r['amount']);
+        }
       }
     } catch (_) {
       if (mounted) {
@@ -79,32 +84,36 @@ class _CouponEntryState extends State<CouponEntry> {
   @override
   Widget build(BuildContext context) => !enabled
       ? const SizedBox.shrink()
-      : Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  nt(context, 'Bonus coupon', 'Bonus coupon'),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                TextField(
-                  controller: code,
-                  maxLength: 24,
-                  enabled: !busy,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: InputDecoration(
-                    labelText: nt(context, 'Coupon code', 'Coupon code'),
+      : RewardPanel(
+          title: nt(context, 'Bonus coupon', 'Bonus coupon'),
+          subtitle: nt(
+            context,
+            'Have a code? Turn it into coins.',
+            'Coupon code ഉപയോഗിച്ച് coins നേടൂ.',
+          ),
+          icon: Icons.confirmation_number_outlined,
+          accent: const Color(0xffb85a91),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: code,
+                maxLength: 24,
+                enabled: !busy,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  labelText: nt(context, 'Coupon code', 'Coupon code'),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                FilledButton(
-                  onPressed: busy ? null : redeem,
-                  child: Text(nt(context, 'Redeem', 'ഉപയോഗിക്കുക')),
-                ),
-                if (message != null) Text(message!),
-              ],
-            ),
+              ),
+              FilledButton(
+                onPressed: busy ? null : redeem,
+                child: Text(nt(context, 'Redeem', 'ഉപയോഗിക്കുക')),
+              ),
+              if (message != null) Text(message!),
+            ],
           ),
         );
 }

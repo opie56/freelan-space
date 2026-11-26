@@ -1,3 +1,5 @@
+import 'reward_design.dart';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -21,14 +23,36 @@ class MonthlySpending extends StatelessWidget {
     builder: (c, s) {
       final v = s.data;
       if (v == null) return const SizedBox.shrink();
-      return Card(
-        child: ListTile(
-          title: Text(
-            ct(c, 'Monthly coin spending (UTC)', 'ഈ മാസത്തെ coin ചെലവ് (UTC)'),
-          ),
-          subtitle: Text(
-            '${ct(c, 'Campaign reservations', 'Campaign മാറ്റിവച്ചത്')}: ${v['campaign']} · ${ct(c, 'Transfers', 'Transfers')}: ${v['transfer']} · ${ct(c, 'Other', 'മറ്റുള്ളവ')}: ${v['other']} · ${ct(c, 'Refunds', 'തിരികെ ലഭിച്ചത്')}: ${v['refund']}',
-          ),
+      return RewardPanel(
+        title: ct(
+          c,
+          'Monthly coin spending (UTC)',
+          'ഈ മാസത്തെ coin ചെലവ് (UTC)',
+        ),
+        subtitle: ct(c, 'Where your coins went', 'Coins ചെലവഴിച്ചത്'),
+        icon: Icons.account_balance_wallet_outlined,
+        accent: const Color(0xff428e8a),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            RewardStat(
+              label: ct(c, 'Campaign reservations', 'Campaign മാറ്റിവച്ചത്'),
+              value: '${v['campaign']}',
+            ),
+            RewardStat(
+              label: ct(c, 'Transfers', 'Transfers'),
+              value: '${v['transfer']}',
+            ),
+            RewardStat(
+              label: ct(c, 'Other', 'മറ്റുള്ളവ'),
+              value: '${v['other']}',
+            ),
+            RewardStat(
+              label: ct(c, 'Refunds', 'തിരികെ ലഭിച്ചത്'),
+              value: '${v['refund']}',
+            ),
+          ],
         ),
       );
     },
