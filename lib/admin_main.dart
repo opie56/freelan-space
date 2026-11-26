@@ -1,3 +1,4 @@
+import 'admin_real_name_verification.dart';
 import 'admin_user_benefits.dart';
 import 'admin_campaign_plan.dart';
 import 'admin_destination.dart';
@@ -2378,8 +2379,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       context,
                       MaterialPageRoute<void>(
                         builder: (_) =>
-                            page == 'userFeatures' &&
+                            page == 'realName' &&
                                 widget.gateway is SupabaseAdminGateway
+                            ? AdminRealNameVerificationPage(
+                                client: (widget.gateway as SupabaseAdminGateway)
+                                    .client,
+                                canEdit: canEdit,
+                              )
+                            : page == 'userFeatures' &&
+                                  widget.gateway is SupabaseAdminGateway
                             ? AdminUserBenefitsPage(
                                 client: (widget.gateway as SupabaseAdminGateway)
                                     .client,
@@ -2420,6 +2428,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                     ),
                     itemBuilder: (_) => [
+                      if (widget.gateway is SupabaseAdminGateway)
+                        const PopupMenuItem(
+                          value: 'realName',
+                          child: Text('Real name requests'),
+                        ),
                       if (widget.gateway is SupabaseAdminGateway)
                         const PopupMenuItem(
                           value: 'userFeatures',
@@ -4665,6 +4678,10 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
       client: (widget.gateway as SupabaseAdminGateway).client,
       canEdit: role == 'editor',
     ),
+    'realName' => AdminRealNameVerificationPage(
+      client: (widget.gateway as SupabaseAdminGateway).client,
+      canEdit: role == 'editor',
+    ),
     'userFeatures' => AdminUserBenefitsPage(
       client: (widget.gateway as SupabaseAdminGateway).client,
       canEdit: role == 'editor',
@@ -4721,6 +4738,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
       ('actionControls', Icons.tune),
       ('coinSettings', Icons.toll_outlined),
       if (widget.gateway is SupabaseAdminGateway) ...[
+        ('realName', Icons.verified_user_outlined),
         ('userFeatures', Icons.tune_outlined),
         ('sendNotifications', Icons.send_outlined),
         ('updates', Icons.system_update),
@@ -4818,7 +4836,9 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                                       ? Semantics(
                                           selected: selected == entry.$1,
                                           child: IconButton(
-                                            tooltip: entry.$1 == 'userFeatures'
+                                            tooltip: entry.$1 == 'realName'
+                                                ? 'Real name requests'
+                                                : entry.$1 == 'userFeatures'
                                                 ? 'User features'
                                                 : entry.$1 == 'homeSlides'
                                                 ? 'Home slideshow'
@@ -4854,7 +4874,9 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                                                 : const Color(0xffa6a3bf),
                                           ),
                                           title: Text(
-                                            entry.$1 == 'userFeatures'
+                                            entry.$1 == 'realName'
+                                                ? 'Real name requests'
+                                                : entry.$1 == 'userFeatures'
                                                 ? 'User features'
                                                 : entry.$1 == 'homeSlides'
                                                 ? 'Home slideshow'
