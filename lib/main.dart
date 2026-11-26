@@ -11,6 +11,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'more_user_benefits.dart';
 import 'user_benefits.dart';
 import 'user_page_canvas.dart';
+import 'retained_tab_body.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -2656,36 +2657,40 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       ),
     ),
   );
-  @override
-  Widget build(BuildContext context) {
-    final pages = [
-      Dashboard(
-        onBrowse: () => setState(() {
-          selected = 1;
-        }),
-        onCampaigns: () => setState(() {
-          selected = 2;
-        }),
-        onBrowseType: (type) => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => TaskCategoryPage(uid: widget.user.id, type: type),
-          ),
+  late final mainTabs = <Widget>[
+    Dashboard(
+      onBrowse: () => setState(() {
+        selected = 1;
+      }),
+      onCampaigns: () => setState(() {
+        selected = 2;
+      }),
+      onBrowseType: (type) => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => TaskCategoryPage(uid: widget.user.id, type: type),
         ),
-        uid: widget.user.id,
-        benefitsClient: db,
-        slideshowGateway: HomeSlidesGateway(db),
-        onReferrals: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => ProfileDetailsPage(
-              uid: widget.user.id,
-              gateway: SupabaseProfileGateway(db),
-              accounts: false,
-            ),
+      ),
+      uid: widget.user.id,
+      benefitsClient: db,
+      slideshowGateway: HomeSlidesGateway(db),
+      onReferrals: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ProfileDetailsPage(
+            uid: widget.user.id,
+            gateway: SupabaseProfileGateway(db),
+            accounts: false,
           ),
         ),
       ),
-      EarnLanding(uid: widget.user.id),
-      Campaigns(uid: widget.user.id),
+    ),
+    EarnLanding(uid: widget.user.id),
+    Campaigns(uid: widget.user.id),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final pages = [
+      ...mainTabs,
       Profile(
         user: widget.user,
         onNotifications: openNotifications,
@@ -2714,7 +2719,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               notifications: notifications,
               onNotifications: openNotifications,
             ),
-      body: SafeArea(child: pages[selected]),
+      body: SafeArea(
+        child: RetainedTabBody(index: selected, pages: pages),
+      ),
       bottomNavigationBar: GrowthNavigation(
         selected: selected,
         labels: [for (final label in labels) tr(context, label)],
@@ -4532,10 +4539,31 @@ class _SubmissionStatusState extends State<SubmissionStatus> {
   }
 }
 
-class PendingReviews extends StatelessWidget {
+class PendingReviews extends StatefulWidget {
   const PendingReviews({super.key, required this.campaignId});
   final String campaignId;
+  @override
+  State<PendingReviews> createState() => _PendingReviewsState();
+}
+
+class _PendingReviewsState extends State<PendingReviews> {
+  late var claims = claimsFor(widget.campaignId);
+
+  Stream<List<Map<String, dynamic>>> claimsFor(String campaignId) => db
+      .from('campaign_claims')
+      .stream(primaryKey: ['campaign_id', 'user_id'])
+      .eq('campaign_id', campaignId);
+
+  @override
+  void didUpdateWidget(covariant PendingReviews oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.campaignId != widget.campaignId) {
+      claims = claimsFor(widget.campaignId);
+    }
+  }
+
   Future<void> review(BuildContext context, Map<String, dynamic> claim) async {
+    final campaignId = widget.campaignId;
     final participant = claim['user_id'] as String;
     final submission = claim['submission_id'] as String;
     final result = await showDialog<bool>(
@@ -4561,10 +4589,7 @@ class PendingReviews extends StatelessWidget {
   Widget build(
     BuildContext context,
   ) => StreamBuilder<List<Map<String, dynamic>>>(
-    stream: db
-        .from('campaign_claims')
-        .stream(primaryKey: ['campaign_id', 'user_id'])
-        .eq('campaign_id', campaignId),
+    stream: claims,
     builder: (context, snapshot) {
       if (snapshot.hasError) return Text(tr(context, 'error'));
       if (!snapshot.hasData) return const LinearProgressIndicator();
@@ -5061,7 +5086,10 @@ class _CampaignsState extends State<Campaigns> {
                             campaignId: data['id'] as String,
                           ),
                         widget.reviewsBuilder?.call(data['id'] as String) ??
-                            PendingReviews(campaignId: data['id'] as String),
+                            PendingReviews(
+                              key: ValueKey(data['id']),
+                              campaignId: data['id'] as String,
+                            ),
                         if (widget.reviewsBuilder == null &&
                             data['status'] == 'active')
                           TaskInstructionsEditor(
@@ -5737,6 +5765,21 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
     'support_reference',
   );
   String filter = 'all';
+  late var history = historyFor(widget);
+
+  Stream<List<Map<String, dynamic>>> historyFor(CoinHistoryPage page) =>
+      page.historyStream ??
+      db.from('coin_ledger').stream(primaryKey: ['id']).eq('user_id', page.uid);
+
+  @override
+  void didUpdateWidget(covariant CoinHistoryPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.uid != widget.uid ||
+        oldWidget.historyStream != widget.historyStream) {
+      history = historyFor(widget);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => UserPageScaffold(
     identity: UserPageIdentity.coinHistory,
@@ -5785,12 +5828,7 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
           ],
         ),
         StreamBuilder<List<Map<String, dynamic>>>(
-          stream:
-              widget.historyStream ??
-              db
-                  .from('coin_ledger')
-                  .stream(primaryKey: ['id'])
-                  .eq('user_id', widget.uid),
+          stream: history,
           builder: (context, snapshot) {
             if (snapshot.hasError) return Text(tr(context, 'error'));
             if (!snapshot.hasData) {
