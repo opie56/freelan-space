@@ -1,3 +1,4 @@
+import 'real_name_verification.dart';
 import 'task_clarity.dart';
 import 'screenshot_editor.dart';
 import 'engagement_benefits.dart';
@@ -6514,8 +6515,36 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
       widget.gateway ?? SupabaseProfileGateway(db);
   late final Stream<int?> balance = gateway.balance(widget.user.id);
   late Future<ProfileInfo> data = gateway.load(widget.user.id);
+  Map? verification;
+  @override
+  void initState() {
+    super.initState();
+    loadVerification();
+  }
+
+  Future<void> loadVerification() async {
+    if (widget.gateway != null) return;
+    try {
+      final value = await db.rpc('real_name_verification_status');
+      if (mounted) setState(() => verification = value as Map);
+    } catch (_) {
+      if (mounted) setState(() => verification = null);
+    }
+  }
+
+  Future<void> openVerification() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => RealNameVerificationPage(client: db),
+      ),
+    );
+    if (mounted) loadVerification();
+  }
+
   void reload() => setState(() {
     data = gateway.load(widget.user.id);
+    loadVerification();
   });
   Future<void> openDetails(
     bool accounts, {
@@ -6575,6 +6604,8 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
         loading: details.connectionState != ConnectionState.done,
         error: details.hasError,
         onRetry: reload,
+        verification: verification,
+        onVerification: widget.gateway == null ? openVerification : null,
         onPersonalInfo: !details.hasData
             ? null
             : () async {
@@ -6643,7 +6674,11 @@ class ProfileLayout extends StatelessWidget {
     this.notifications,
     this.loadCampaignPlan,
     this.onCampaignReferrals,
+    this.verification,
+    this.onVerification,
   });
+  final Map? verification;
+  final VoidCallback? onVerification;
   final Future<CampaignPlan> Function()? loadCampaignPlan;
   final Future<void> Function()? onCampaignReferrals;
   final VoidCallback? onNotifications;
@@ -6731,6 +6766,21 @@ class ProfileLayout extends StatelessWidget {
                                     color: userInk,
                                   ),
                                 ),
+                                if (verification?['status'] == 'approved' &&
+                                    verification?['verified_name'] ==
+                                        profileName(user)?.trim())
+                                  Tooltip(
+                                    message: uf(
+                                      context,
+                                      'Real name verified',
+                                      'യഥാർത്ഥ പേര് പരിശോധിച്ചു',
+                                    ),
+                                    child: const Icon(
+                                      Icons.verified,
+                                      color: Colors.blue,
+                                      size: 22,
+                                    ),
+                                  ),
                                 if (profileName(user) != null &&
                                     user.email != null) ...[
                                   const SizedBox(height: 5),
@@ -6916,6 +6966,16 @@ class ProfileLayout extends StatelessWidget {
                             ),
                             onTap: onPersonalInfo,
                           ),
+                          if (onVerification != null)
+                            ProfileMenuTile(
+                              icon: Icons.verified_user_outlined,
+                              title: uf(
+                                context,
+                                'Real name verification',
+                                'യഥാർത്ഥ പേര് പരിശോധിക്കൽ',
+                              ),
+                              onTap: onVerification,
+                            ),
                           ProfileMenuTile(
                             icon: Icons.alternate_email,
                             title: tr(context, 'instagramAccounts'),

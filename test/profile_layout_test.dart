@@ -113,6 +113,41 @@ Future<void> showProfile(
 }
 
 void main() {
+  testWidgets('badge appears only for the approved current name', (
+    tester,
+  ) async {
+    Widget page(Map? verification) => MaterialApp(
+      home: Scaffold(
+        body: ProfileLayout(
+          user: user,
+          info: null,
+          balance: null,
+          loading: false,
+          error: false,
+          onRetry: () {},
+          onPersonalInfo: null,
+          onAccounts: () {},
+          onReferrals: () {},
+          onPin: null,
+          onSignOut: () {},
+          onLanguage: () {},
+          verification: verification,
+        ),
+      ),
+    );
+    await tester.pumpWidget(
+      page({'status': 'pending', 'verified_name': 'Diana Larussa'}),
+    );
+    expect(find.byIcon(Icons.verified), findsNothing);
+    await tester.pumpWidget(
+      page({'status': 'approved', 'verified_name': 'Another Name'}),
+    );
+    expect(find.byIcon(Icons.verified), findsNothing);
+    await tester.pumpWidget(
+      page({'status': 'approved', 'verified_name': 'Diana Larussa'}),
+    );
+    expect(find.byIcon(Icons.verified), findsOneWidget);
+  });
   testWidgets('profile opens separate history and campaign limits pages', (
     tester,
   ) async {
