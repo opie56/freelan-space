@@ -256,6 +256,7 @@ class _HomeSlideshowState extends State<HomeSlideshow>
       if (mounted &&
           slides.length > 1 &&
           controller.hasClients &&
+          TickerMode.getValuesNotifier(context).value.enabled &&
           !MediaQuery.disableAnimationsOf(context)) {
         controller.animateToPage(
           (current + 1) % slides.length,
