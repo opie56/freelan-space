@@ -4,6 +4,8 @@
 // Reviewed overrides cover payment confirmations and common wallet terms.
 const Map<String, Map<String, String>> userTranslations = {
   "hi": {
+    "Confirm Instagram username": "Instagram उपयोगकर्ता नाम की पुष्टि करें",
+    "Only add your own Instagram account. Do not use another person’s username. If the owner reports it, your account may be blocked. Once added, this username cannot be edited or deleted.": "केवल अपना Instagram खाता जोड़ें। किसी अन्य व्यक्ति का उपयोगकर्ता नाम इस्तेमाल न करें। यदि मालिक रिपोर्ट करता है, तो आपका खाता ब्लॉक हो सकता है। जोड़ने के बाद उपयोगकर्ता नाम बदला या हटाया नहीं जा सकता।",
     "Use at least 12 characters (up to 72 UTF-8 bytes), including uppercase and lowercase letters, a number and a symbol.": "कम से कम 12 अक्षर (अधिकतम 72 UTF-8 बाइट) रखें, जिनमें बड़े और छोटे अंग्रेज़ी अक्षर, एक अंक और एक चिह्न हो।",
     "Account verification": "खाता सत्यापन",
     "Verify your account": "अपना खाता सत्यापित करें",
@@ -634,6 +636,8 @@ const Map<String, Map<String, String>> userTranslations = {
     "you@example.com": "you@example.com",
   },
   "ta": {
+    "Confirm Instagram username": "Instagram பயனர்பெயரை உறுதிப்படுத்தவும்",
+    "Only add your own Instagram account. Do not use another person’s username. If the owner reports it, your account may be blocked. Once added, this username cannot be edited or deleted.": "உங்கள் சொந்த Instagram கணக்கை மட்டும் சேர்க்கவும். பிறரின் பயனர்பெயரைப் பயன்படுத்த வேண்டாம். உரிமையாளர் புகாரளித்தால் உங்கள் கணக்கு தடுக்கப்படலாம். சேர்த்த பிறகு பயனர்பெயரை மாற்றவோ நீக்கவோ முடியாது.",
     "Use at least 12 characters (up to 72 UTF-8 bytes), including uppercase and lowercase letters, a number and a symbol.": "குறைந்தது 12 எழுத்துகள் (அதிகபட்சம் 72 UTF-8 பைட்டுகள்), பெரிய மற்றும் சிறிய ஆங்கில எழுத்துகள், எண் மற்றும் குறியீடு சேர்க்கவும்.",
     "Account verification": "கணக்கு சரிபார்ப்பு",
     "Verify your account": "உங்கள் கணக்கைச் சரிபார்க்கவும்",
@@ -1261,6 +1265,8 @@ const Map<String, Map<String, String>> userTranslations = {
     "you@example.com": "you@example.com",
   },
   "ar": {
+    "Confirm Instagram username": "تأكيد اسم مستخدم Instagram",
+    "Only add your own Instagram account. Do not use another person’s username. If the owner reports it, your account may be blocked. Once added, this username cannot be edited or deleted.": "أضف حساب Instagram الخاص بك فقط. لا تستخدم اسم مستخدم شخص آخر. إذا أبلغ المالك، فقد يتم حظر حسابك. بعد الإضافة، لا يمكن تعديل اسم المستخدم أو حذفه.",
     "Use at least 12 characters (up to 72 UTF-8 bytes), including uppercase and lowercase letters, a number and a symbol.": "استخدم 12 حرفاً على الأقل (بحد أقصى 72 بايت UTF-8)، تتضمن أحرفاً إنجليزية كبيرة وصغيرة ورقماً ورمزاً.",
     "Account verification": "التحقق من الحساب",
     "Verify your account": "تحقق من حسابك",

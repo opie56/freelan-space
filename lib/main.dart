@@ -392,39 +392,10 @@ const words = <String, List<String>>{
     'Add Instagram username manually',
     'Instagram username നേരിട്ട് ചേർക്കുക',
   ],
-  'instagramSearch': ['Search Instagram username', 'Instagram username തിരയുക'],
-  'instagramSearchHelp': [
-    'Enter the full username of a Business or Creator account. Personal and age-restricted accounts are not supported.',
-    'Business അല്ലെങ്കിൽ Creator account-ന്റെ മുഴുവൻ username നൽകുക. Personal, പ്രായപരിധിയുള്ള accounts ലഭ്യമല്ല.',
-  ],
-  'instagramSearchHint': ['Exact username', 'മുഴുവൻ username'],
-  'instagramSearchAction': ['Search', 'തിരയുക'],
-  'instagramSearchAdd': ['Add account', 'Account ചേർക്കുക'],
-  'instagramSearchNotFound': [
-    'No supported account found. Check the full username; personal and age-restricted accounts may not appear.',
-    'Account കണ്ടെത്തിയില്ല. മുഴുവൻ username പരിശോധിക്കുക; personal, പ്രായപരിധിയുള്ള accounts ലഭ്യമാകണമെന്നില്ല.',
-  ],
-  'instagramSearchUnavailable': [
-    'Search is unavailable. Ask the app owner to configure Instagram access.',
-    'Search ലഭ്യമല്ല. Instagram access ക്രമീകരിക്കാൻ app ഉടമയോട് പറയുക.',
-  ],
-  'instagramSearchLimited': [
-    'Too many searches. Please try again later.',
-    'തിരച്ചിലുകൾ കൂടുതലാണ്. കുറച്ച് കഴിഞ്ഞ് ശ്രമിക്കുക.',
-  ],
-  'instagramSearchDenied': [
-    'Sign in again or contact the administrator.',
-    'വീണ്ടും login ചെയ്യുക അല്ലെങ്കിൽ administrator-നെ ബന്ധപ്പെടുക.',
-  ],
-  'instagramSearchOwnership': [
-    'This result does not verify account ownership.',
-    'ഈ ഫലം account ഉടമസ്ഥാവകാശം സ്ഥിരീകരിക്കുന്നില്ല.',
-  ],
   'noAccounts': [
     'No Instagram usernames added yet.',
     'Instagram username ചേർത്തിട്ടില്ല.',
   ],
-  'removeAccount': ['Remove', 'നീക്കം ചെയ്യുക'],
   'referrals': ['Referral program', 'Referral പദ്ധതി'],
   'referralCode': ['Your referral code', 'നിങ്ങളുടെ referral കോഡ്'],
   'referralCount': ['People referred', 'Referral വഴി ചേർന്നവർ'],
@@ -6260,11 +6231,6 @@ class _ReleasePinDialogState extends State<ReleasePinDialog> {
   );
 }
 
-class InstagramLookupException implements Exception {
-  const InstagramLookupException(this.code);
-  final String code;
-}
-
 class ProfileInfo {
   final Map<String, int> referralRewards;
   const ProfileInfo({
@@ -6290,8 +6256,6 @@ abstract class ProfileGateway {
   Stream<int?> balance(String uid);
   Stream<List<Map<String, dynamic>>> history(String uid);
   Future<void> addAccount(String username);
-  Future<String> searchInstagram(String username);
-  Future<void> removeAccount(String username);
   Future<void> applyReferral(String code);
   Future<String?> latestAppDownloadUrl();
   Future<void> sendPinOtp();
@@ -6386,45 +6350,6 @@ class SupabaseProfileGateway
   @override
   Future<void> addAccount(String username) async =>
       client.rpc('add_instagram_account', params: {'p_username': username});
-  @override
-  Future<String> searchInstagram(String username) async {
-    try {
-      final response = await client.functions.invoke(
-        'instagram-lookup',
-        body: {'username': username},
-      );
-      final data = response.data;
-      if (data is! Map || data['username'] is! String) {
-        throw const InstagramLookupException('lookup_unavailable');
-      }
-      final result = data['username'] as String;
-      final query = username.trim().replaceFirst(RegExp(r'^@'), '');
-      if (!RegExp(r'^[A-Za-z0-9._]{1,30}$').hasMatch(result) ||
-          result.toLowerCase() != query.toLowerCase()) {
-        throw const InstagramLookupException('lookup_unavailable');
-      }
-      return result;
-    } on FunctionException catch (e) {
-      final details = e.details;
-      final code = details is Map ? details['error'] : null;
-      if (code == 'not_found_or_unsupported' ||
-          code == 'rate_limited' ||
-          code == 'access_denied' ||
-          code == 'unauthorized') {
-        throw InstagramLookupException(code as String);
-      }
-      if (e.status == 401) throw const InstagramLookupException('unauthorized');
-      if (e.status == 403) {
-        throw const InstagramLookupException('access_denied');
-      }
-      if (e.status == 429) throw const InstagramLookupException('rate_limited');
-      throw const InstagramLookupException('lookup_unavailable');
-    }
-  }
-
-  @override
-  Future<void> removeAccount(String username) async =>
-      client.rpc('remove_instagram_account', params: {'p_username': username});
   @override
   Future<void> applyReferral(String code) async =>
       client.rpc('apply_referral', params: {'p_code': code});
@@ -7078,12 +7003,10 @@ class ProfileDetailsPage extends StatefulWidget {
 
 class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
   final referralCodeInput = TextEditingController();
-  final accountSearchInput = TextEditingController();
   bool applyingReferral = false, sharingReferral = false;
   @override
   void dispose() {
     referralCodeInput.dispose();
-    accountSearchInput.dispose();
     super.dispose();
   }
 
@@ -7173,12 +7096,57 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
       builder: (_) => ProfileInputDialog(titleKey: 'addAccount'),
     );
     if (value == null || value.isEmpty || !mounted) return;
+    final username = value.trim().replaceFirst(RegExp(r'^@'), '');
+    if (!RegExp(r'^[A-Za-z0-9._]{1,30}$').hasMatch(username)) {
+      toast(context, tr(context, 'proofBadHandle'));
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          uf(
+            context,
+            'Confirm Instagram username',
+            'Instagram username സ്ഥിരീകരിക്കുക',
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('@$username', textDirection: TextDirection.ltr),
+              const SizedBox(height: 12),
+              Text(
+                uf(
+                  context,
+                  'Only add your own Instagram account. Do not use another person’s username. If the owner reports it, your account may be blocked. Once added, this username cannot be edited or deleted.',
+                  'നിങ്ങളുടെ സ്വന്തം Instagram account മാത്രം ചേർക്കുക. മറ്റൊരാളുടെ username ഉപയോഗിക്കരുത്. ഉടമ റിപ്പോർട്ട് ചെയ്താൽ നിങ്ങളുടെ account block ചെയ്യപ്പെടാം. ചേർത്ത ശേഷം username edit ചെയ്യാനോ delete ചെയ്യാനോ കഴിയില്ല.',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(tr(context, 'cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(tr(context, 'yesConfirm')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     if (!await (widget.authorizeChange?.call() ??
         confirmSecurityPin(context))) {
       return;
     }
     try {
-      await widget.gateway.addAccount(value);
+      await widget.gateway.addAccount(username);
       if (!mounted) return;
       reload();
     } catch (e) {
@@ -7188,47 +7156,6 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
             : friendlyError(context, e);
         toast(context, message);
       }
-    }
-  }
-
-  Future<void> search() async {
-    final username = await showDialog<String>(
-      context: context,
-      builder: (_) => InstagramSearchDialog(
-        gateway: widget.gateway,
-        initialQuery: accountSearchInput.text.trim(),
-      ),
-    );
-    if (username == null || !mounted) return;
-    if (!await (widget.authorizeChange?.call() ??
-        confirmSecurityPin(context))) {
-      return;
-    }
-    try {
-      await widget.gateway.addAccount(username);
-      if (mounted) reload();
-    } catch (e) {
-      if (mounted) {
-        toast(
-          context,
-          e is PostgrestException && e.code == '23505'
-              ? tr(context, 'duplicateAccount')
-              : friendlyError(context, e),
-        );
-      }
-    }
-  }
-
-  Future<void> remove(String username) async {
-    if (!await (widget.authorizeChange?.call() ??
-        confirmSecurityPin(context))) {
-      return;
-    }
-    try {
-      await widget.gateway.removeAccount(username);
-      if (mounted) reload();
-    } catch (e) {
-      if (mounted) toast(context, friendlyError(context, e));
     }
   }
 
@@ -7682,88 +7609,15 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                 icon: Icons.alternate_email_rounded,
               ),
             if (widget.accounts) ...[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      TextField(
-                        controller: accountSearchInput,
-                        style: const TextStyle(fontSize: 11),
-                        decoration: InputDecoration(
-                          hintText: tr(context, 'instagramSearch'),
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          isDense: true,
-                          filled: true,
-                          fillColor: const Color(0xffeee7fa),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none,
-                          ),
-                          suffixIcon: IconButton.filled(
-                            style: IconButton.styleFrom(
-                              backgroundColor: growthPurple,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            tooltip: tr(context, 'instagramSearch'),
-                            onPressed: search,
-                            icon: const Icon(Icons.search, size: 20),
-                          ),
-                        ),
-                        onSubmitted: (_) => search(),
-                      ),
-                      if (info.usernames.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Text(
-                            uf(
-                              context,
-                              'No Instagram usernames added yet.',
-                              'Instagram usernames ചേർത്തിട്ടില്ല.',
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      Row(
-                        children: [
-                          const Expanded(child: Divider()),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Text(
-                              uf(context, 'or', 'അല്ലെങ്കിൽ'),
-                              style: const TextStyle(fontSize: 11),
-                            ),
-                          ),
-                          const Expanded(child: Divider()),
-                        ],
-                      ),
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          backgroundColor: const Color(0xffe2d3fb),
-                          minimumSize: const Size(0, 48),
-                          textStyle: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        onPressed: input,
-                        icon: const Icon(Icons.add_circle),
-                        label: Text(tr(context, 'addAccount')),
-                      ),
-                    ],
-                  ),
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color(0xffe2d3fb),
+                  minimumSize: const Size(0, 48),
                 ),
+                onPressed: input,
+                icon: const Icon(Icons.add_circle),
+                label: Text(tr(context, 'addAccount')),
               ),
-              const SizedBox(height: 12),
               if (info.usernames.isEmpty)
                 GrowthEmpty(
                   art: 'accounts',
@@ -7776,15 +7630,6 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                     context,
                     'Add your Instagram username to manage your account here.',
                     'നിങ്ങളുടെ Instagram username ചേർക്കുക.',
-                  ),
-                  action: GrowthActionButton(
-                    onPressed: input,
-                    icon: Icons.add,
-                    label: uf(
-                      context,
-                      'Add Instagram username',
-                      'Instagram username ചേർക്കുക',
-                    ),
                   ),
                 ),
               for (final username in info.usernames)
@@ -7833,16 +7678,6 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                               ),
                             ),
                           ),
-                        IconButton(
-                          constraints: const BoxConstraints.tightFor(
-                            width: 40,
-                            height: 48,
-                          ),
-                          padding: EdgeInsets.zero,
-                          icon: const Icon(Icons.delete_outline),
-                          tooltip: tr(context, 'removeAccount'),
-                          onPressed: () => remove(username),
-                        ),
                         PopupMenuButton<String>(
                           tooltip: uf(
                             context,
@@ -8008,142 +7843,6 @@ class _ProfileInputDialogState extends State<ProfileInputDialog> {
       FilledButton(
         onPressed: () => Navigator.pop(context, controller.text.trim()),
         child: Text(tr(context, 'apply')),
-      ),
-    ],
-  );
-}
-
-class InstagramSearchDialog extends StatefulWidget {
-  const InstagramSearchDialog({
-    super.key,
-    required this.gateway,
-    this.initialQuery = '',
-  });
-  final ProfileGateway gateway;
-  final String initialQuery;
-  @override
-  State<InstagramSearchDialog> createState() => _InstagramSearchDialogState();
-}
-
-class _InstagramSearchDialogState extends State<InstagramSearchDialog> {
-  final controller = TextEditingController();
-  @override
-  void initState() {
-    super.initState();
-    controller.text = widget.initialQuery;
-    if (widget.initialQuery.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) search();
-      });
-    }
-  }
-
-  bool busy = false;
-  String? result, error;
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> search() async {
-    if (busy) return;
-    final handle = controller.text.trim().replaceFirst(RegExp(r'^@'), '');
-    if (!RegExp(r'^[A-Za-z0-9._]{1,30}$').hasMatch(handle)) {
-      setState(() {
-        result = null;
-        error = tr(context, 'proofBadHandle');
-      });
-      return;
-    }
-    setState(() {
-      busy = true;
-      result = null;
-      error = null;
-    });
-    try {
-      final username = await widget.gateway.searchInstagram(handle);
-      if (mounted) setState(() => result = username);
-    } on InstagramLookupException catch (e) {
-      if (mounted) {
-        final key = switch (e.code) {
-          'not_found_or_unsupported' => 'instagramSearchNotFound',
-          'rate_limited' => 'instagramSearchLimited',
-          'access_denied' || 'unauthorized' => 'instagramSearchDenied',
-          _ => 'instagramSearchUnavailable',
-        };
-        setState(() => error = tr(context, key));
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => error = tr(context, 'instagramSearchUnavailable'));
-      }
-    } finally {
-      if (mounted) setState(() => busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text(tr(context, 'instagramSearch')),
-    content: SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(tr(context, 'instagramSearchHelp')),
-          const SizedBox(height: 12),
-          TextField(
-            controller: controller,
-            enabled: !busy,
-            autofocus: true,
-            decoration: InputDecoration(
-              labelText: tr(context, 'instagramSearchHint'),
-              hintText: '@username',
-            ),
-            onChanged: (_) => setState(() {
-              result = null;
-              error = null;
-            }),
-            onSubmitted: (_) => search(),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: busy ? null : search,
-            icon: const Icon(Icons.search),
-            label: Text(tr(context, 'instagramSearchAction')),
-          ),
-          if (busy) const Center(child: CircularProgressIndicator()),
-          if (error != null)
-            Text(
-              error!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          if (result != null) ...[
-            const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.account_circle_outlined),
-              title: Text('@$result'),
-            ),
-            Text(
-              tr(context, 'instagramSearchOwnership'),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ],
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: busy ? null : () => Navigator.pop(context),
-        child: Text(tr(context, 'cancel')),
-      ),
-      FilledButton(
-        onPressed: busy || result == null
-            ? null
-            : () => Navigator.pop(context, result),
-        child: Text(tr(context, 'instagramSearchAdd')),
       ),
     ],
   );

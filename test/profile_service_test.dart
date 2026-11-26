@@ -59,21 +59,6 @@ void main() {
         });
         request.response.headers.contentType = ContentType.json;
         switch (request.uri.path) {
-          case '/functions/v1/instagram-lookup':
-            final body = jsonDecode(raw) as Map<String, dynamic>;
-            if (body['username'] == 'missing') {
-              request.response.statusCode = 404;
-              request.response.write(
-                jsonEncode({'error': 'not_found_or_unsupported'}),
-              );
-            } else if (body['username'] == 'limited') {
-              request.response.statusCode = 429;
-              request.response.write(jsonEncode({'error': 'rate_limited'}));
-            } else if (body['username'] == 'mismatch') {
-              request.response.write(jsonEncode({'username': 'other'}));
-            } else {
-              request.response.write(jsonEncode({'username': 'Example'}));
-            }
           case '/rest/v1/coin_settings':
             request.response.write(
               jsonEncode([
@@ -112,46 +97,7 @@ void main() {
         expect(info.referralCount, 3);
         expect(info.pinSet, isTrue);
         expect(info.referralRewards, {'invite': 100});
-        expect(await api.searchInstagram('example'), 'Example');
-        await expectLater(
-          api.searchInstagram('missing'),
-          throwsA(
-            isA<InstagramLookupException>().having(
-              (e) => e.code,
-              'code',
-              'not_found_or_unsupported',
-            ),
-          ),
-        );
-        await expectLater(
-          api.searchInstagram('limited'),
-          throwsA(
-            isA<InstagramLookupException>().having(
-              (e) => e.code,
-              'code',
-              'rate_limited',
-            ),
-          ),
-        );
-        await expectLater(
-          api.searchInstagram('mismatch'),
-          throwsA(
-            isA<InstagramLookupException>().having(
-              (e) => e.code,
-              'code',
-              'lookup_unavailable',
-            ),
-          ),
-        );
-
-        expect(
-          requests.firstWhere(
-            (r) => r['path'] == '/functions/v1/instagram-lookup',
-          )['body'],
-          {'username': 'example'},
-        );
         await api.addAccount('@third');
-        await api.removeAccount('first');
         await api.applyReferral('code');
         expect(await api.setPin('1234', '123456'), 'otp_required');
         final accountRequest = requests.singleWhere(
@@ -163,12 +109,6 @@ void main() {
             (r) => r['path'] == '/rest/v1/rpc/add_instagram_account',
           )['body'],
           {'p_username': '@third'},
-        );
-        expect(
-          requests.singleWhere(
-            (r) => r['path'] == '/rest/v1/rpc/remove_instagram_account',
-          )['body'],
-          {'p_username': 'first'},
         );
         expect(
           requests.singleWhere(
