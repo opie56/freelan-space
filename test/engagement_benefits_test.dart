@@ -65,6 +65,10 @@ void main() {
     expect(find.textContaining('Tasks: 2'), findsOneWidget);
     await tester.tap(find.text('Claim'));
     await tester.pumpAndSettle();
+    expect(find.text('Coins credited!'), findsOneWidget);
+    expect(find.text('+3'), findsOneWidget);
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
     expect(find.text('Claimed'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     client.dispose();

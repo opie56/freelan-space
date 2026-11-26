@@ -287,6 +287,7 @@ void main() {
     await tester.tap(find.text('Security PIN'));
     await tester.pumpAndSettle();
     expect(find.text('New 4-digit PIN'), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
     await tester.tap(find.text('Send email OTP'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).at(0), '123456');

@@ -85,6 +85,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Claim'));
     await tester.pumpAndSettle();
+    expect(find.text('Coins credited!'), findsOneWidget);
+    expect(find.text('+2'), findsOneWidget);
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
     expect(find.text('Claimed'), findsOneWidget);
     expect(calls, contains('claim_daily_bonus'));
     await tester.ensureVisible(find.text('Edit'));

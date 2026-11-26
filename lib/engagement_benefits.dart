@@ -1,3 +1,5 @@
+import 'reward_design.dart';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -59,7 +61,7 @@ class _EngagementOverviewState extends State<EngagementOverview> {
     try {
       final amount = await widget.client.rpc('claim_weekly_challenge');
       await load();
-      if (mounted) setState(() => message = '$amount coins');
+      if (mounted) await showCoinCreditSuccess(context, amount);
     } catch (_) {
       if (mounted) {
         setState(
@@ -81,33 +83,94 @@ class _EngagementOverviewState extends State<EngagementOverview> {
     return Column(
       children: [
         if (challenge != null)
-          Card(
-            child: ListTile(
-              title: Text(et(context, 'Weekly challenge', 'Weekly challenge')),
-              subtitle: Text(
-                '${challenge!['completed']} / ${challenge!['target']} · ${challenge!['reward']} coins (UTC)',
-              ),
-              trailing: challenge!['claimed'] == true
-                  ? Text(et(context, 'Claimed', 'ലഭിച്ചു'))
-                  : TextButton(
-                      onPressed:
-                          busy ||
-                              (challenge!['completed'] as num) <
-                                  (challenge!['target'] as num) ||
-                              (challenge!['reward'] as num) == 0
-                          ? null
-                          : claim,
-                      child: Text(et(context, 'Claim', 'നേടുക')),
+          RewardPanel(
+            title: et(context, 'Weekly challenge', 'Weekly challenge'),
+            subtitle: et(
+              context,
+              'Complete approved tasks to unlock your reward · UTC',
+              'Reward നേടാൻ tasks പൂർത്തിയാക്കുക · UTC',
+            ),
+            icon: Icons.emoji_events_rounded,
+            accent: const Color(0xffd88b24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      '${challenge!['completed']} / ${challenge!['target']}',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
+                    RewardStat(
+                      label: et(context, 'Reward', 'Reward'),
+                      value: '${challenge!['reward']} coins',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    minHeight: 8,
+                    backgroundColor: const Color(0xfff3e7d4),
+                    color: const Color(0xffe7a338),
+                    value: (challenge!['target'] as num) <= 0
+                        ? 0
+                        : ((challenge!['completed'] as num) /
+                                  (challenge!['target'] as num))
+                              .clamp(0.0, 1.0)
+                              .toDouble(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (challenge!['claimed'] == true)
+                  Text(et(context, 'Claimed', 'ലഭിച്ചു'))
+                else
+                  FilledButton(
+                    onPressed:
+                        busy ||
+                            (challenge!['completed'] as num) <
+                                (challenge!['target'] as num) ||
+                            (challenge!['reward'] as num) == 0
+                        ? null
+                        : claim,
+                    child: Text(et(context, 'Claim', 'നേടുക')),
+                  ),
+              ],
             ),
           ),
         if (monthly != null)
-          Card(
-            child: ListTile(
-              title: Text(et(context, 'This month (UTC)', 'ഈ മാസം (UTC)')),
-              subtitle: Text(
-                '${et(context, 'Tasks', 'Tasks')}: ${monthly!['task']} · ${et(context, 'Referrals', 'Referrals')}: ${monthly!['referral']} · ${et(context, 'Bonuses', 'Bonuses')}: ${monthly!['bonus']} coins',
-              ),
+          RewardPanel(
+            title: et(context, 'This month (UTC)', 'ഈ മാസം (UTC)'),
+            subtitle: et(
+              context,
+              'Your coin earnings at a glance',
+              'ഈ മാസത്തെ coin വരുമാനം',
+            ),
+            icon: Icons.auto_graph_rounded,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                RewardStat(
+                  label: et(context, 'Tasks', 'Tasks'),
+                  value: '${monthly!['task']}',
+                ),
+                RewardStat(
+                  label: et(context, 'Referrals', 'Referrals'),
+                  value: '${monthly!['referral']}',
+                ),
+                RewardStat(
+                  label: et(context, 'Bonuses', 'Bonuses'),
+                  value: '${monthly!['bonus']}',
+                ),
+              ],
             ),
           ),
         if (message != null) Text(message!),

@@ -1,3 +1,5 @@
+import 'reward_design.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -68,18 +70,12 @@ class _RewardsAndGoalState extends State<RewardsAndGoal> {
       error = null;
     });
     try {
-      await widget.client.rpc(
+      final amount = await widget.client.rpc(
         name,
         params: milestone == null ? null : {'p_milestone': milestone},
       );
       await load();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(t(context, 'Bonus credited.', 'Bonus ലഭിച്ചു.')),
-          ),
-        );
-      }
+      if (mounted) await showCoinCreditSuccess(context, amount);
     } catch (_) {
       if (mounted) {
         setState(
@@ -146,24 +142,38 @@ class _RewardsAndGoalState extends State<RewardsAndGoal> {
                 ],
               ),
             if (f['daily_bonus'] == true && rewards != null)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(t(context, 'Daily check-in', 'Daily check-in')),
-                subtitle: Text(
-                  '${rewards!['daily_amount']} ${t(context, 'coins · resets at 00:00 UTC', 'coins · 00:00 UTC-ൽ പുതുക്കും')}',
+              RewardPanel(
+                title: t(context, 'Daily check-in', 'Daily check-in'),
+                subtitle: t(
+                  context,
+                  'A little reward every day · resets at 00:00 UTC',
+                  'ദിവസേന reward നേടൂ · 00:00 UTC-ൽ പുതുക്കും',
                 ),
-                trailing: FilledButton(
-                  onPressed:
-                      busy ||
-                          rewards!['daily_claimed'] == true ||
-                          rewards!['daily_amount'] == 0
-                      ? null
-                      : () => claim('claim_daily_bonus'),
-                  child: Text(
-                    rewards!['daily_claimed'] == true
-                        ? t(context, 'Claimed', 'ലഭിച്ചു')
-                        : t(context, 'Claim', 'നേടുക'),
-                  ),
+                icon: Icons.calendar_today_rounded,
+                accent: const Color(0xffd58d27),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    RewardStat(
+                      label: t(context, 'Daily reward', 'Daily reward'),
+                      value: '${rewards!['daily_amount']} coins',
+                    ),
+                    FilledButton(
+                      onPressed:
+                          busy ||
+                              rewards!['daily_claimed'] == true ||
+                              rewards!['daily_amount'] == 0
+                          ? null
+                          : () => claim('claim_daily_bonus'),
+                      child: Text(
+                        rewards!['daily_claimed'] == true
+                            ? t(context, 'Claimed', 'ലഭിച്ചു')
+                            : t(context, 'Claim', 'നേടുക'),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             if (f['achievement_badges'] == true && rewards != null) ...[

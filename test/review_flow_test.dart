@@ -24,6 +24,7 @@ void main() {
                   context: context,
                   builder: (_) => ClaimSubmissionDialog(
                     picker: () async => proof,
+                    loadAccounts: () async => ['person', 'second'],
                     onSubmit: (handle, value) async {
                       submittedHandle = handle;
                       submittedProof = value;
@@ -41,7 +42,10 @@ void main() {
       await tester.tap(find.text('Submit for review'));
       await tester.pump();
       expect(find.text(words['proofBadHandle']![0]), findsOneWidget);
-      await tester.enterText(find.byKey(const Key('proof_handle')), '@person');
+      await tester.tap(find.byKey(const Key('proof_handle')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('@person').last);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Submit for review'));
       await tester.pump();
       expect(find.text(words['proofRequired']![0]), findsOneWidget);
@@ -50,11 +54,45 @@ void main() {
       expect(find.byType(Image), findsOneWidget);
       await tester.tap(find.text('Submit for review'));
       await tester.pumpAndSettle();
+      expect(submittedHandle, isNull);
+      expect(find.text('Confirm submission'), findsOneWidget);
+      await tester.tap(find.text('Cancel').last);
+      await tester.pumpAndSettle();
+      expect(submittedHandle, isNull);
+      await tester.tap(find.text('Submit for review'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirm').last);
+      await tester.pumpAndSettle();
       expect(submittedHandle, 'person');
       expect(submittedProof, same(proof));
       expect(find.byType(ClaimSubmissionDialog), findsNothing);
     },
   );
+
+  testWidgets('submission requires an account saved in profile', (
+    tester,
+  ) async {
+    var submitted = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ClaimSubmissionDialog(
+            loadAccounts: () async => [],
+            onSubmit: (_, _) async => submitted = true,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Add an Instagram account in Profile first.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Submit for review'));
+    await tester.pump();
+    expect(submitted, isFalse);
+    expect(find.byKey(const Key('proof_handle')), findsNothing);
+  });
 
   testWidgets(
     'owner cannot approve until evidence loads and errors remain visible',

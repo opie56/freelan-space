@@ -3,10 +3,36 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/main.dart';
 import 'package:growth_circle/design.dart';
+import 'package:growth_circle/home_slides.dart';
 import 'package:growth_circle/user_page_design.dart';
 
 void main() {
   tearDown(() => language.value = const Locale('en'));
+  testWidgets('home places slideshow above wallet and removes action section', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Dashboard(
+            uid: 'sample',
+            onBrowse: () {},
+            balanceStream: Stream.value([
+              {'balance': 0},
+            ]),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(
+      tester.getTopLeft(find.byType(HomeSlideshow)).dy,
+      lessThan(tester.getTopLeft(find.byType(BalanceCard)).dy),
+    );
+    expect(find.text('Small actions. Shared momentum.'), findsNothing);
+    expect(find.byType(DashboardTaskTile), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
   testWidgets('home wallet opens history with transaction references', (
     tester,
   ) async {
@@ -214,15 +240,12 @@ void main() {
     expect(tester.takeException(), isNull);
   });
   for (final locale in ['en', 'ml']) {
-    testWidgets('home wallet and task cards work at narrow width in $locale', (
-      tester,
-    ) async {
+    testWidgets('home wallet works at narrow width in $locale', (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       language.value = Locale(locale);
-      var browse = false;
       await tester.pumpWidget(
         MaterialApp(
           theme: growthTheme(),
@@ -240,7 +263,7 @@ void main() {
               balanceStream: Stream.value([
                 {'balance': 128},
               ]),
-              onBrowse: () => browse = true,
+              onBrowse: () {},
             ),
           ),
         ),
@@ -258,42 +281,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(words['browse']![locale == 'ml' ? 1 : 0]), findsNothing);
       expect(find.text(words['create']![locale == 'ml' ? 1 : 0]), findsNothing);
-      final task = find.byType(DashboardTaskTile).first;
-      await tester.ensureVisible(task);
-      await tester.pumpAndSettle();
-      await tester.tap(task);
-      expect(browse, isTrue);
+      expect(find.byType(DashboardTaskTile), findsNothing);
       expect(tester.takeException(), isNull);
     });
   }
-
-  testWidgets('home action selects its matching task category', (tester) async {
-    String? selected;
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: growthTheme(),
-        home: Scaffold(
-          body: Dashboard(
-            uid: 'sample',
-            balanceStream: Stream.value([
-              {'balance': 1},
-            ]),
-            onBrowse: () {},
-            onBrowseType: (type) => selected = type,
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.text('Like'),
-      160,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Like').first);
-    expect(selected, 'like');
-  });
 
   testWidgets('shared page content stays centered on a wide window', (
     tester,
