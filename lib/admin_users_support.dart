@@ -134,7 +134,7 @@ class _AdminUsersSupportPageState extends State<AdminUsersSupportPage> {
     appBar: AdminPageBar(
       title: 'Users Supports',
       icon: Icons.support_agent,
-      desktop: MediaQuery.sizeOf(context).width >= 1100,
+      desktop: adminWideHeader(context),
       subtitle: supportText(
         context,
         'Read and reply to user support chats.',

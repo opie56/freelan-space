@@ -60,10 +60,15 @@ void main() {
       final title = locale == 'ml'
           ? 'പേര് പരിശോധന അപേക്ഷകൾ'
           : 'Real name requests';
-      await tester.drag(find.byType(ListView).first, const Offset(0, -400));
-      await tester.pumpAndSettle();
       final entry = find.widgetWithText(ListTile, title);
-      await tester.ensureVisible(entry);
+      await tester.scrollUntilVisible(
+        entry,
+        100,
+        scrollable: find.descendant(
+          of: find.byKey(const Key('admin_sidebar')),
+          matching: find.byType(Scrollable),
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.tap(entry);
       await tester.pumpAndSettle();

@@ -73,10 +73,15 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.drag(find.byType(ListView).first, const Offset(0, -800));
-    await tester.pumpAndSettle();
     final entry = find.widgetWithText(ListTile, 'Users Supports');
-    await tester.ensureVisible(entry);
+    await tester.scrollUntilVisible(
+      entry,
+      100,
+      scrollable: find.descendant(
+        of: find.byKey(const Key('admin_sidebar')),
+        matching: find.byType(Scrollable),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(entry);
     await tester.pumpAndSettle();

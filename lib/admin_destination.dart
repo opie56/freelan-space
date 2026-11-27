@@ -39,13 +39,61 @@ class AdminDestinationScaffold extends Scaffold {
     super.key,
     required AdminDestination destination,
     required Widget body,
+    double minBodyHeight = 0,
     super.appBar,
     super.floatingActionButton,
     super.bottomNavigationBar,
   }) : super(
          backgroundColor: Colors.transparent,
-         body: AdminDestinationCanvas(destination: destination, child: body),
+         body: AdminDestinationCanvas(
+           destination: destination,
+           child: minBodyHeight == 0
+               ? body
+               : _ShortAdminViewport(minHeight: minBodyHeight, child: body),
+         ),
        );
+}
+
+/// Show a draggable thumb wherever an admin page has more content to scroll.
+class AdminScrollBehavior extends MaterialScrollBehavior {
+  const AdminScrollBehavior();
+
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) => Scrollbar(
+    controller: details.controller,
+    thumbVisibility: true,
+    child: child,
+  );
+}
+
+/// Give pages with fixed filters and a flexible results list enough room to
+/// lay out. The surrounding page only scrolls in a short window.
+class _ShortAdminViewport extends StatelessWidget {
+  const _ShortAdminViewport({required this.minHeight, required this.child});
+  final double minHeight;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final short = constraints.maxHeight < minHeight;
+      return SingleChildScrollView(
+        primary: false,
+        physics: short ? null : const NeverScrollableScrollPhysics(),
+        child: SizedBox(
+          height: short ? minHeight : constraints.maxHeight,
+          child: Padding(
+            padding: EdgeInsetsDirectional.only(end: short ? 12 : 0),
+            child: child,
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class AdminDestinationCanvas extends StatelessWidget {
