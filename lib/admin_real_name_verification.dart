@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -119,7 +121,8 @@ class _ProofDialog extends StatefulWidget {
 }
 
 class _ProofDialogState extends State<_ProofDialog> {
-  late Future<dynamic> proof;
+  late Future<({String? document, Uint8List front, Uint8List? back})> proof;
+  final reason = TextEditingController();
   bool busy = false;
   String? error;
   @override
@@ -128,14 +131,58 @@ class _ProofDialogState extends State<_ProofDialog> {
     proof = load();
   }
 
-  Future<dynamic> load() async {
+  @override
+  void dispose() {
+    reason.dispose();
+    super.dispose();
+  }
+
+  Future<({String? document, Uint8List front, Uint8List? back})> load() async {
     final data = await widget.client.rpc(
-      'admin_real_name_proof',
+      'admin_real_name_proofs',
       params: {'p_request_id': widget.row['request_id']},
     );
-    if (data == null) throw StateError('Request unavailable');
-    return decodeEvidenceImage(data as String);
+    if (data is! Map) throw StateError('Request unavailable');
+    return (
+      document: VerificationDocument.labelFor(data['document_type']),
+      front: await decodeEvidenceImage(data['front'] as String),
+      back: data['back'] == null
+          ? null
+          : await decodeEvidenceImage(data['back'] as String),
+    );
   }
+
+  Widget side(String label, Uint8List bytes) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 6),
+        InkWell(
+          onTap: () => showDialog<void>(
+            context: context,
+            builder: (context) => Dialog.fullscreen(
+              child: Scaffold(
+                appBar: AppBar(title: Text(label)),
+                body: Center(
+                  child: InteractiveViewer(
+                    maxScale: 6,
+                    child: Image.memory(bytes, fit: BoxFit.contain),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          child: Container(
+            height: 185,
+            color: Theme.of(context).colorScheme.surfaceContainer,
+            child: Image.memory(bytes, fit: BoxFit.contain),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Future<void> decide(bool approve) async {
     setState(() {
@@ -148,6 +195,7 @@ class _ProofDialogState extends State<_ProofDialog> {
         params: {
           'p_request_id': widget.row['request_id'],
           'p_approve': approve,
+          'p_reason': approve ? null : reason.text.trim(),
         },
       );
       if (mounted) Navigator.pop(context);
@@ -178,20 +226,65 @@ class _ProofDialogState extends State<_ProofDialog> {
                 'Profile name changed to ${widget.row['current_name'] ?? '(empty)'}. Reject and ask the user to submit again.',
               ),
             const SizedBox(height: 12),
-            FutureBuilder<dynamic>(
+            FutureBuilder(
               future: proof,
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return const Text('Unable to load ID image.');
+                  return TextButton(
+                    onPressed: busy
+                        ? null
+                        : () => setState(() => proof = load()),
+                    child: const Text('Could not load ID photos. Retry'),
+                  );
                 }
-                if (!snapshot.hasData) {
+                final images = snapshot.data;
+                if (images == null) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                return InteractiveViewer(
-                  child: Image.memory(snapshot.data, fit: BoxFit.contain),
+                final back = images.back;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(images.document ?? 'Legacy ID proof'),
+                    const Text(
+                      'Select a photo to open it at full size and zoom.',
+                    ),
+                    const SizedBox(height: 10),
+                    if (back != null)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: side('Front photo', images.front)),
+                          const SizedBox(width: 12),
+                          Expanded(child: side('Back photo', back)),
+                        ],
+                      )
+                    else ...[
+                      side('Front photo', images.front),
+                      const Text(
+                        'This earlier request did not include a back photo.',
+                      ),
+                    ],
+                  ],
                 );
               },
             ),
+            if (widget.canEdit) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: reason,
+                enabled: !busy,
+                maxLength: 500,
+                minLines: 2,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Rejection reason',
+                  helperText: 'Shown to the user. Required to reject.',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ],
             if (error != null)
               Text(
                 error!,
@@ -208,14 +301,21 @@ class _ProofDialogState extends State<_ProofDialog> {
       ),
       if (widget.canEdit)
         TextButton(
-          onPressed: busy ? null : () => decide(false),
+          onPressed: busy || reason.text.trim().isEmpty
+              ? null
+              : () => decide(false),
           child: const Text('Reject'),
         ),
       if (widget.canEdit)
-        FutureBuilder<dynamic>(
+        FutureBuilder(
           future: proof,
           builder: (context, snapshot) => FilledButton(
-            onPressed: busy || widget.changed || !snapshot.hasData
+            onPressed:
+                busy ||
+                    widget.changed ||
+                    !snapshot.hasData ||
+                    (snapshot.data?.document != null &&
+                        snapshot.data?.back == null)
                 ? null
                 : () => decide(true),
             child: const Text('Approve'),

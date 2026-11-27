@@ -1,3 +1,4 @@
+import 'account_preferences_banner.dart';
 import 'real_name_verification.dart';
 import 'task_clarity.dart';
 import 'screenshot_editor.dart';
@@ -6536,10 +6537,14 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
     await Navigator.push(
       context,
       MaterialPageRoute<void>(
-        builder: (_) => RealNameVerificationPage(client: db),
+        builder: (_) => RealNameVerificationPage(
+          client: db,
+          authorizeNameChange:
+              widget.authorizeChange ?? () => confirmSecurityPin(context),
+        ),
       ),
     );
-    if (mounted) loadVerification();
+    if (mounted) reload();
   }
 
   void reload() => setState(() {
@@ -6615,6 +6620,9 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
                     builder: (_) => PersonalInformationPage(
                       user: widget.user,
                       publicId: details.data?.publicUserId,
+                      nameLocked:
+                          verification?['status'] == 'approved' ||
+                          verification?['seconds_remaining'] != null,
                       authorizeChange:
                           widget.authorizeChange ??
                           () => confirmSecurityPin(context),
@@ -6693,6 +6701,9 @@ class ProfileLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = profileName(user) ?? user.email ?? tr(context, 'profile');
+    final verified =
+        verification?['status'] == 'approved' &&
+        verification?['verified_name'] == profileName(user)?.trim();
     final created = DateTime.tryParse(user.createdAt);
     final joined = created == null
         ? null
@@ -6757,8 +6768,37 @@ class ProfileLayout extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  name,
+                                Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text: verified ? '$name\u2060' : name,
+                                      ),
+                                      if (verified)
+                                        WidgetSpan(
+                                          alignment:
+                                              PlaceholderAlignment.middle,
+                                          child: Padding(
+                                            padding:
+                                                const EdgeInsetsDirectional.only(
+                                                  start: 4,
+                                                ),
+                                            child: Tooltip(
+                                              message: uf(
+                                                context,
+                                                'Real name verified',
+                                                'യഥാർത്ഥ പേര് പരിശോധിച്ചു',
+                                              ),
+                                              child: const Icon(
+                                                Icons.verified,
+                                                color: Color(0xff1671bf),
+                                                size: 20,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                   style: const TextStyle(
                                     fontSize: 21,
                                     height: 1.2,
@@ -6766,21 +6806,6 @@ class ProfileLayout extends StatelessWidget {
                                     color: userInk,
                                   ),
                                 ),
-                                if (verification?['status'] == 'approved' &&
-                                    verification?['verified_name'] ==
-                                        profileName(user)?.trim())
-                                  Tooltip(
-                                    message: uf(
-                                      context,
-                                      'Real name verified',
-                                      'യഥാർത്ഥ പേര് പരിശോധിച്ചു',
-                                    ),
-                                    child: const Icon(
-                                      Icons.verified,
-                                      color: Colors.blue,
-                                      size: 22,
-                                    ),
-                                  ),
                                 if (profileName(user) != null &&
                                     user.email != null) ...[
                                   const SizedBox(height: 5),
@@ -8134,60 +8159,54 @@ class _UserSettingsPageState extends State<UserSettingsPage>
     }
   }
 
+  Widget settingsHeading(BuildContext context, IconData icon, String title) =>
+      Padding(
+        padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
+        child: Row(
+          children: [
+            Icon(icon, color: growthPurple, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: userInk,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+
   @override
   Widget build(BuildContext context) => UserPageScaffold(
     identity: UserPageIdentity.settings,
     appBar: AppBar(title: Text(uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ'))),
     body: Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
+        constraints: const BoxConstraints(maxWidth: 620),
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
           children: [
-            UserSectionIntro(
+            AccountPreferencesBanner(
+              kicker: uf(context, 'PREFERENCES', 'മുൻഗണനകൾ'),
               title: uf(context, 'Make it yours', 'നിങ്ങളുടെ ഇഷ്ടത്തിന്'),
               subtitle: uf(
                 context,
-                'Language, notifications and app preferences.',
-                'ഭാഷ, notifications, app ക്രമീകരണങ്ങൾ.',
+                'Manage alerts, language and account controls in one place.',
+                'അറിയിപ്പുകൾ, ഭാഷ, അക്കൗണ്ട് നിയന്ത്രണങ്ങൾ ഒരിടത്ത് കൈകാര്യം ചെയ്യുക.',
               ),
               icon: Icons.tune_rounded,
             ),
-            Card(
-              child: ListTile(
-                minTileHeight: 64,
-                leading: const GrowthIcon(Icons.system_update),
-                title: Text(uf(context, 'App updates', 'App updates')),
-                subtitle: Text(
-                  uf(
-                    context,
-                    'Check for latest version',
-                    'പുതിയ പതിപ്പ് പരിശോധിക്കുക',
-                  ),
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => const AppUpdatePage(),
-                  ),
-                ),
-              ),
+            const SizedBox(height: 16),
+            settingsHeading(
+              context,
+              Icons.notifications_none_rounded,
+              uf(context, 'Notifications', 'അറിയിപ്പുകൾ'),
             ),
-            if (widget.enabledLoader == null) ...[
-              NotificationPreferences(client: db),
-              ExtraAlertSettings(client: db),
-              PreferredTasksSettings(client: db),
-              UserReportTracking(client: db),
-              QuietHoursSettings(client: db),
-              DeviceSessions(
-                client: db,
-                askPin: (context) => showDialog<String>(
-                  context: context,
-                  builder: (_) => const ReleasePinDialog(),
-                ),
-              ),
-            ],
+            if (loading || busy) const LinearProgressIndicator(),
             Card(
               child: SwitchListTile(
                 secondary: const GrowthIcon(Icons.notifications_active),
@@ -8239,6 +8258,17 @@ class _UserSettingsPageState extends State<UserSettingsPage>
                 },
               ),
             ),
+            if (widget.enabledLoader == null) ...[
+              NotificationPreferences(client: db),
+              ExtraAlertSettings(client: db),
+              QuietHoursSettings(client: db),
+            ],
+            const SizedBox(height: 14),
+            settingsHeading(
+              context,
+              Icons.dashboard_customize_outlined,
+              uf(context, 'App preferences', 'ആപ്പ് ക്രമീകരണങ്ങൾ'),
+            ),
             Card(
               child: ListTile(
                 minTileHeight: 64,
@@ -8285,33 +8315,45 @@ class _UserSettingsPageState extends State<UserSettingsPage>
                 ),
               ),
             ),
-            const LegalLinks(),
-            if (loading || busy) const LinearProgressIndicator(),
-            const SizedBox(height: 24),
             Card(
-              color: const Color(0xffe8dcfb),
               child: ListTile(
                 minTileHeight: 64,
-                leading: const Icon(
-                  Icons.verified_user_outlined,
-                  color: growthPurple,
-                ),
-                title: Text(
-                  uf(
-                    context,
-                    'Your data is safe and secure',
-                    'നിങ്ങളുടെ വിവരങ്ങൾ സുരക്ഷിതമാണ്',
-                  ),
-                ),
+                leading: const GrowthIcon(Icons.system_update),
+                title: Text(uf(context, 'App updates', 'App updates')),
                 subtitle: Text(
                   uf(
                     context,
-                    'We value your privacy',
-                    'നിങ്ങളുടെ സ്വകാര്യത പ്രധാനമാണ്',
+                    'Check for latest version',
+                    'പുതിയ പതിപ്പ് പരിശോധിക്കുക',
+                  ),
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AppUpdatePage(),
                   ),
                 ),
               ),
             ),
+            if (widget.enabledLoader == null)
+              PreferredTasksSettings(client: db),
+            const SizedBox(height: 14),
+            settingsHeading(
+              context,
+              Icons.shield_outlined,
+              uf(context, 'Account and privacy', 'അക്കൗണ്ടും സ്വകാര്യതയും'),
+            ),
+            if (widget.enabledLoader == null) ...[
+              DeviceSessions(
+                client: db,
+                askPin: (context) => showDialog<String>(
+                  context: context,
+                  builder: (_) => const ReleasePinDialog(),
+                ),
+              ),
+              UserReportTracking(client: db),
+            ],
             Card(
               child: ListTile(
                 leading: const Icon(Icons.delete_forever, color: Colors.red),
@@ -8333,6 +8375,8 @@ class _UserSettingsPageState extends State<UserSettingsPage>
                 ),
               ),
             ),
+            const SizedBox(height: 8),
+            const LegalLinks(),
           ],
         ),
       ),

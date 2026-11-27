@@ -128,6 +128,7 @@ class PersonalInformationPage extends StatefulWidget {
     required this.publicId,
     required this.gateway,
     this.picker,
+    this.nameLocked = false,
     this.authorizeChange,
     this.emailChangeEnabled = const bool.fromEnvironment(
       'SECURE_EMAIL_CHANGE_ENABLED',
@@ -138,7 +139,7 @@ class PersonalInformationPage extends StatefulWidget {
   final String? publicId;
   final PersonalInformationGateway gateway;
   final Future<XFile?> Function()? picker;
-  final bool emailChangeEnabled;
+  final bool emailChangeEnabled, nameLocked;
   final Future<bool> Function()? authorizeChange;
   @override
   State<PersonalInformationPage> createState() =>
@@ -152,10 +153,32 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
   Uint8List? photo;
   bool loading = true, busy = false;
   String? photoError;
+  late bool nameLocked = widget.nameLocked;
   @override
   void initState() {
     super.initState();
     loadPhoto();
+    loadNameLock();
+  }
+
+  Future<void> loadNameLock() async {
+    final gateway = widget.gateway;
+    if (nameLocked || gateway is! SupabasePersonalInformationGateway) return;
+    try {
+      gateway.checkSession();
+      final state =
+          await gateway.client.rpc('real_name_verification_status') as Map;
+      gateway.checkSession();
+      if (mounted) {
+        setState(() {
+          nameLocked =
+              state['status'] == 'approved' ||
+              state['seconds_remaining'] != null;
+        });
+      }
+    } catch (_) {
+      // The database still enforces the lock if status is unavailable here.
+    }
   }
 
   Future<void> loadPhoto() async {
@@ -224,6 +247,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
   }
 
   Future<void> editName() async {
+    if (nameLocked) return;
     var draft = name;
     final value = await showDialog<String>(
       context: context,
@@ -408,11 +432,27 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                         ListTile(
                           leading: const GrowthIcon(Icons.person),
                           title: Text(_t(context, 'Name', 'പേര്')),
-                          trailing: IconButton(
-                            tooltip: _t(context, 'Edit name', 'പേര് മാറ്റുക'),
-                            icon: const Icon(Icons.edit_outlined),
-                            onPressed: busy ? null : editName,
-                          ),
+                          trailing: nameLocked
+                              ? Tooltip(
+                                  message: _t(
+                                    context,
+                                    'Verified name is locked',
+                                    'സ്ഥിരീകരിച്ച പേര് മാറ്റാനാകില്ല',
+                                  ),
+                                  child: const Icon(
+                                    Icons.lock_outline,
+                                    color: userTeal,
+                                  ),
+                                )
+                              : IconButton(
+                                  tooltip: _t(
+                                    context,
+                                    'Edit name',
+                                    'പേര് മാറ്റുക',
+                                  ),
+                                  icon: const Icon(Icons.edit_outlined),
+                                  onPressed: busy ? null : editName,
+                                ),
                           subtitle: Text(name.trim().isNotEmpty ? name : '—'),
                         ),
                         const Divider(indent: 66, endIndent: 20, height: 1),
