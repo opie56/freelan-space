@@ -16,6 +16,22 @@ class Deletion(unittest.TestCase):
   self.assertEqual(sql('select count(*) from public.coin_purchase_orders where user_id is null'),'1')
   self.assertEqual(sql(f"select count(*) from auth.users where id='{OTHER}'"),'1')
   sql("select public.delete_my_account('123456')",USER,fails=True)
+ def verify(self,nonce='123456',user=USER):
+  return sql(f"select public.verify_account_deletion_code('{nonce}')",user)
+ def test_verification_does_not_delete_and_final_call_rechecks(self):
+  issue()
+  self.assertEqual(self.verify(user=OTHER),'otp_required')
+  self.assertEqual(self.verify(),'ok')
+  self.assertEqual(sql(f"select count(*) from auth.users where id='{USER}'"),'1')
+  issue(age="interval '6 minutes'")
+  self.assertEqual(self.delete(),'otp_required')
+  issue()
+  for _ in range(5): self.assertEqual(self.verify('999999'),'otp_required')
+  self.assertEqual(self.delete(),'otp_required')
+  issue()
+  self.assertEqual(self.verify(),'ok')
+  self.assertEqual(self.delete(),'ok')
+  sql("set role anon; select public.verify_account_deletion_code('123456')",fails=True)
  def test_otp_scope_expiry_lockout_and_admin(self):
   self.assertEqual(self.delete(),'otp_required'); issue()
   self.assertEqual(self.delete(user=OTHER),'otp_required')

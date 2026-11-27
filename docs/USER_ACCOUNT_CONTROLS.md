@@ -6,7 +6,15 @@
 
 <!-- coderabbit-ai-generated-section:v1:9569c1b364a2bcbc12ef601af4fbb7318178cb27682814371115875d5aa8a7e2 -->
 
-- Settings → Permanently delete account: confirm an Auth-issued email code (five-minute expiry, five incorrect attempts). Login access is removed and coins forfeited. Before deletion, a separate private administrator audit archive captures the remaining profile and app business data, including campaigns, submissions/evidence, photos, wallet/ledger/payment/referral history, support threads and account audit events. Passwords, PIN hashes, OTPs, sessions and push tokens are excluded. This intentionally replaces the earlier erasure-only contract. The deletion confirmation and privacy page explain retention. Administrator accounts remain managed by the project owner.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:b8f193b4a0a838b3717f23d1d800ff91c035cd8778f80f9854eb3c97579d4acd -->
+
+- Settings → Permanently delete account: read the deletion and retention details, agree, confirm the signed-in email address with an Auth-issued code (five-minute expiry, five incorrect attempts), then type `ACCOUNT DELETE` and confirm. The server checks the code again before deleting and the app shows success only after deletion. Login access is removed and coins forfeited. Before deletion, a separate private administrator audit archive captures the remaining profile and app business data, including campaigns, submissions/evidence, photos, wallet/ledger/payment/referral history, support threads and account audit events. Passwords, PIN hashes, OTPs, sessions and push tokens are excluded. This intentionally replaces the earlier erasure-only contract. The deletion confirmation and privacy page explain retention. Administrator accounts remain managed by the project owner.
+
+Apply `20261127030000_account_deletion_confirmation.sql` before distributing the updated user app. Existing app versions can continue to use the deletion endpoint.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 - Signup → Generate strong password: generates a 20-character password with cryptographically secure randomness and the existing password policy.

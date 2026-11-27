@@ -66,6 +66,7 @@ const labels = <String, List<String>>{
   ],
   'walletsManagement': ['Wallets Management', 'Wallets Management'],
   'socialLinks': ['Official social links', 'Official social links'],
+  'realName': ['Real name requests', 'പേര് പരിശോധന അപേക്ഷകൾ'],
   'users': ['Users', 'ഉപയോക്താക്കൾ'],
   'workspace': ['ADMIN WORKSPACE', 'ADMIN WORKSPACE'],
   'usersIntro': [
@@ -2429,9 +2430,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                     itemBuilder: (_) => [
                       if (widget.gateway is SupabaseAdminGateway)
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'realName',
-                          child: Text('Real name requests'),
+                          child: Text(at(context, 'realName')),
                         ),
                       if (widget.gateway is SupabaseAdminGateway)
                         const PopupMenuItem(
@@ -4836,9 +4837,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                                       ? Semantics(
                                           selected: selected == entry.$1,
                                           child: IconButton(
-                                            tooltip: entry.$1 == 'realName'
-                                                ? 'Real name requests'
-                                                : entry.$1 == 'userFeatures'
+                                            tooltip: entry.$1 == 'userFeatures'
                                                 ? 'User features'
                                                 : entry.$1 == 'homeSlides'
                                                 ? 'Home slideshow'
@@ -4874,9 +4873,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                                                 : const Color(0xffa6a3bf),
                                           ),
                                           title: Text(
-                                            entry.$1 == 'realName'
-                                                ? 'Real name requests'
-                                                : entry.$1 == 'userFeatures'
+                                            entry.$1 == 'userFeatures'
                                                 ? 'User features'
                                                 : entry.$1 == 'homeSlides'
                                                 ? 'Home slideshow'

@@ -106,32 +106,46 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Service coming soon'), findsOneWidget);
   });
-  testWidgets(
-    'deletion requests email proof and never deletes on an invalid code',
-    (tester) async {
-      var calls = 0;
-      final client = SupabaseClient(
-        'https://example.test',
-        'test',
-        authOptions: const AuthClientOptions(autoRefreshToken: false),
-        httpClient: MockClient((request) async {
-          if (request.url.path.endsWith('/delete_my_account')) {
-            calls++;
+  for (final valid in [false, true]) {
+    testWidgets('account deletion with valid code: $valid', (tester) async {
+      FlutterSecureStorage.setMockInitialValues({});
+      var deletes = 0, checks = 0, sends = 0;
+      final client = (await tester.runAsync(
+        () async => SupabaseClient(
+          'https://example.test',
+          'test',
+          authOptions: const AuthClientOptions(autoRefreshToken: false),
+          httpClient: MockClient((request) async {
+            if (request.url.path.endsWith('/delete_my_account')) {
+              deletes++;
+              expect(jsonDecode(request.body), {'p_nonce': '123456'});
+              return http.Response(
+                '"ok"',
+                200,
+                headers: {'content-type': 'application/json'},
+                request: request,
+              );
+            }
+            if (request.url.path.endsWith('/verify_account_deletion_code')) {
+              checks++;
+              expect(jsonDecode(request.body), {'p_nonce': '123456'});
+              return http.Response(
+                valid ? '"ok"' : '"otp_required"',
+                200,
+                headers: {'content-type': 'application/json'},
+                request: request,
+              );
+            }
+            if (request.url.path.endsWith('/reauthenticate')) sends++;
             return http.Response(
-              '"otp_required"',
+              '{}',
               200,
               headers: {'content-type': 'application/json'},
               request: request,
             );
-          }
-          return http.Response(
-            '{}',
-            200,
-            headers: {'content-type': 'application/json'},
-            request: request,
-          );
-        }),
-      );
+          }),
+        ),
+      ))!;
       addTearDown(() {
         client.dispose();
       });
@@ -161,22 +175,67 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Delete my account permanently'), findsNothing);
-      await tester.tap(find.text('Send confirmation code'));
-      await tester.pumpAndSettle();
+      Future<void> tapVisible(Finder finder) async {
+        await tester.scrollUntilVisible(
+          finder,
+          150,
+          scrollable: find
+              .descendant(
+                of: find.byType(ListView),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tester.tap(finder);
+        await tester.pumpAndSettle();
+      }
+
+      Finder button(String title) => find.widgetWithText(FilledButton, title);
+      final next = button('Continue');
+      await tester.scrollUntilVisible(next, 150);
+      expect(tester.widget<FilledButton>(next).onPressed, isNull);
+      expect(sends, 0);
+      await tapVisible(find.byType(CheckboxListTile));
+      await tapVisible(next);
+      expect(find.text('synthetic@example.test'), findsOneWidget);
+      await tapVisible(find.text('Send confirmation code'));
+      expect(sends, 1);
       await tester.enterText(find.byType(TextField), '123456');
-      await tester.ensureVisible(find.text('Delete my account permanently'));
-      await tester.tap(find.text('Delete my account permanently'));
-      await tester.pumpAndSettle();
-      expect(calls, 1);
+      await tester.pump();
+      await tapVisible(button('Verify code'));
       expect(
-        find.text('Code invalid or expired. Request a new code.'),
-        findsOneWidget,
+        checks,
+        1,
         reason: tester
             .widgetList<Text>(find.byType(Text))
             .map((t) => t.data)
-            .join(' | '),
+            .join(" | "),
       );
-    },
-  );
+      expect(deletes, 0);
+      final delete = button('Delete my account permanently');
+      if (!valid) {
+        expect(delete, findsNothing);
+        expect(
+          find.text(
+            'Code invalid or expired. Check the code or request a new one.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Account deleted'), findsNothing);
+        return;
+      }
+      expect(tester.widget<FilledButton>(delete).onPressed, isNull);
+      await tester.enterText(find.byType(TextField), 'account delete');
+      await tester.pump();
+      expect(tester.widget<FilledButton>(delete).onPressed, isNull);
+      await tester.enterText(find.byType(TextField), 'ACCOUNT DELETE');
+      await tester.pump();
+      await tapVisible(delete);
+      expect(deletes, 1);
+      expect(find.text('Account deleted'), findsOneWidget);
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      expect(client.auth.currentUser, isNull);
+    });
+  }
 }
