@@ -138,6 +138,11 @@ void main() {
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
       expect(changes, [false, true]);
+      await Scrollable.ensureVisible(
+        tester.element(find.byType(DropdownButton<String>)),
+        alignment: .4,
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.byType(DropdownButton<String>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('മലയാളം').last);

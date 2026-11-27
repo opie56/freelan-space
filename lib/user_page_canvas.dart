@@ -37,7 +37,8 @@ enum UserPageIdentity {
   privacy(29),
   terms(30),
   updates(31),
-  mandatoryUpdate(32);
+  mandatoryUpdate(32),
+  realName(33);
 
   const UserPageIdentity(this.designId);
   final int designId;
