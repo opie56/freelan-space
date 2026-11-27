@@ -187,11 +187,12 @@ class _AdminWalletsPageState extends State<AdminWalletsPage> {
 
   @override
   Widget build(BuildContext context) => AdminDestinationScaffold(
+    minBodyHeight: 330,
     destination: AdminDestination.adjustments,
     appBar: AdminPageBar(
       title: 'Wallets Management',
       icon: Icons.account_balance_wallet_outlined,
-      desktop: MediaQuery.sizeOf(context).width >= 1100,
+      desktop: adminWideHeader(context),
       subtitle: _t(
         context,
         'Find a wallet and manage coins, holds and access.',

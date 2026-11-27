@@ -348,7 +348,7 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
     appBar: AdminPageBar(
       title: 'App releases',
       icon: Icons.rocket_launch,
-      desktop: MediaQuery.sizeOf(context).width >= 1100,
+      desktop: adminWideHeader(context),
       subtitle: 'Manage app updates and release history.',
       actions: [
         IconButton(

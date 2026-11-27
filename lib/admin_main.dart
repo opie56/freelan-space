@@ -906,6 +906,7 @@ class _AdminAppState extends State<AdminApp> with WidgetsBindingObserver {
     supportedLocales: const [Locale('en'), Locale('ml')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
     theme: adminTheme(),
+    scrollBehavior: const AdminScrollBehavior(),
     builder: (context, child) => Listener(
       onPointerDown: (_) => activity(),
       onPointerSignal: (_) => activity(),
@@ -2001,6 +2002,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   Widget build(BuildContext context) => AdminDestinationScaffold(
     destination: AdminDestination.dashboard,
+    minBodyHeight: 620,
     appBar: widget.embedded
         ? null
         : AppBar(
@@ -2942,7 +2944,7 @@ class _AdminActionControlsState extends State<AdminActionControls> {
     appBar: AdminPageBar(
       title: at(context, 'actionControls'),
       icon: Icons.tune,
-      desktop: MediaQuery.sizeOf(context).width >= 1100,
+      desktop: adminWideHeader(context),
       subtitle: Localizations.localeOf(context).languageCode == 'ml'
           ? 'User പ്രവർത്തനങ്ങൾ ഓൺ അല്ലെങ്കിൽ ഓഫ് ചെയ്യുക.'
           : 'Enable or disable user actions.',
@@ -3047,10 +3049,11 @@ class _AdminCampaignsState extends State<AdminCampaigns> {
   @override
   Widget build(BuildContext context) => AdminDestinationScaffold(
     destination: AdminDestination.campaigns,
+    minBodyHeight: 320,
     appBar: AdminPageBar(
       title: at(context, 'campaigns'),
       icon: Icons.campaign,
-      desktop: MediaQuery.sizeOf(context).width >= 1100,
+      desktop: adminWideHeader(context),
       subtitle: Localizations.localeOf(context).languageCode == 'ml'
           ? 'Campaign-കൾ കാണുകയും നിയന്ത്രിക്കുകയും ചെയ്യുക.'
           : 'View and manage campaigns.',
@@ -3407,10 +3410,11 @@ class _AdminSubmissionsState extends State<AdminSubmissions> {
   @override
   Widget build(BuildContext context) => AdminDestinationScaffold(
     destination: AdminDestination.submissions,
+    minBodyHeight: 320,
     appBar: AdminPageBar(
       title: at(context, 'submissions'),
       icon: Icons.fact_check,
-      desktop: MediaQuery.sizeOf(context).width >= 1100,
+      desktop: adminWideHeader(context),
       subtitle: Localizations.localeOf(context).languageCode == 'ml'
           ? 'പരിശോധിക്കാനുള്ള submissions കാണുക.'
           : 'Review pending submissions.',
@@ -3828,7 +3832,7 @@ class _AdminCoinSettingsState extends State<AdminCoinSettings> {
     appBar: AdminPageBar(
       title: at(context, 'coinSettings'),
       icon: Icons.toll,
-      desktop: MediaQuery.sizeOf(context).width >= 1100,
+      desktop: adminWideHeader(context),
       subtitle: Localizations.localeOf(context).languageCode == 'ml'
           ? 'Reward coin മൂല്യങ്ങൾ ക്രമീകരിക്കുക.'
           : 'Configure reward coin values.',
@@ -4130,6 +4134,7 @@ class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
       _ => at(context, 'roles'),
     };
     return AdminDestinationScaffold(
+      minBodyHeight: widget.page == 'overview' ? 0 : 260,
       destination: switch (widget.page) {
         'overview' => AdminDestination.overview,
         'activity' => AdminDestination.activity,
@@ -4139,7 +4144,7 @@ class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
       },
       appBar: AdminPageBar(
         title: title,
-        desktop: MediaQuery.sizeOf(context).width >= 1100,
+        desktop: adminWideHeader(context),
         icon: switch (widget.page) {
           'overview' => Icons.dashboard,
           'activity' => Icons.history,
@@ -4714,42 +4719,162 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
     ),
   };
 
+  static const _menuGroups = [
+    (
+      'monitoring',
+      'Monitoring',
+      'നിരീക്ഷണം',
+      Icons.dashboard_outlined,
+      [
+        ('overview', Icons.dashboard_outlined),
+        ('reports', Icons.bar_chart_outlined),
+        ('activity', Icons.history),
+        ('alerts', Icons.notifications_outlined),
+      ],
+    ),
+    (
+      'members',
+      'Members & support',
+      'അംഗങ്ങളും സഹായവും',
+      Icons.people_outline,
+      [
+        ('users', Icons.people_outline),
+        ('realName', Icons.verified_user_outlined),
+        ('operations', Icons.support_agent_outlined),
+        ('deletedAccounts', Icons.inventory_2_outlined),
+      ],
+    ),
+    (
+      'tasks',
+      'Campaigns & tasks',
+      'ക്യാമ്പെയ്‌നുകളും ടാസ്‌ക്കുകളും',
+      Icons.campaign_outlined,
+      [
+        ('campaigns', Icons.campaign_outlined),
+        ('submissions', Icons.fact_check_outlined),
+        ('actionControls', Icons.tune),
+      ],
+    ),
+    (
+      'wallet',
+      'Wallet & coins',
+      'വാലറ്റും കോയിനുകളും',
+      Icons.account_balance_wallet_outlined,
+      [
+        ('walletsManagement', Icons.account_balance_wallet_outlined),
+        ('coinSettings', Icons.toll_outlined),
+      ],
+    ),
+    (
+      'app',
+      'App management',
+      'ആപ്പ് മാനേജ്മെന്റ്',
+      Icons.settings_outlined,
+      [
+        ('userFeatures', Icons.tune_outlined),
+        ('sendNotifications', Icons.send_outlined),
+        ('updates', Icons.system_update),
+        ('homeSlides', Icons.view_carousel_outlined),
+        ('socialLinks', Icons.public),
+        ('roles', Icons.admin_panel_settings_outlined),
+      ],
+    ),
+  ];
+  final _closedGroups = {'tasks', 'wallet', 'app'};
+
+  bool _available(String key) => switch (key) {
+    'overview' ||
+    'reports' ||
+    'activity' ||
+    'alerts' ||
+    'roles' => widget.gateway is AdminWorkspaceGateway,
+    'realName' ||
+    'operations' ||
+    'deletedAccounts' ||
+    'walletsManagement' ||
+    'userFeatures' ||
+    'sendNotifications' ||
+    'updates' ||
+    'homeSlides' ||
+    'socialLinks' => widget.gateway is SupabaseAdminGateway,
+    _ => true,
+  };
+
+  String _pageLabel(BuildContext context, String key) => switch (key) {
+    'userFeatures' => 'User features',
+    'homeSlides' => 'Home slideshow',
+    'updates' => 'App releases',
+    'operations' => 'Users Supports',
+    _ => at(context, key),
+  };
+
   void select(String key) {
-    setState(() => selected = key);
+    setState(() {
+      selected = key;
+      for (final group in _menuGroups) {
+        if (group.$5.any((entry) => entry.$1 == key)) {
+          _closedGroups.remove(group.$1);
+          break;
+        }
+      }
+    });
     navigator.currentState!.pushAndRemoveUntil(
       MaterialPageRoute<void>(builder: (_) => page(key)),
       (_) => false,
     );
   }
 
+  Widget _groupHeader(
+    BuildContext context,
+    (String, String, String, IconData, List<(String, IconData)>) group,
+  ) {
+    final open = !_closedGroups.contains(group.$1);
+    final label = Localizations.localeOf(context).languageCode == 'ml'
+        ? group.$3
+        : group.$2;
+    void toggle() => setState(() {
+      if (open) {
+        _closedGroups.add(group.$1);
+      } else {
+        _closedGroups.remove(group.$1);
+      }
+    });
+    return Semantics(
+      expanded: open,
+      child: menuCollapsed
+          ? IconButton(
+              tooltip: label,
+              onPressed: toggle,
+              icon: Icon(group.$4, color: const Color(0xffd9cafa)),
+              isSelected: open,
+              selectedIcon: Icon(group.$4, color: Colors.white),
+              style: IconButton.styleFrom(
+                backgroundColor: const Color(0xff35314e),
+              ),
+            )
+          : ListTile(
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+              title: Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xffd9cafa),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              trailing: Icon(
+                open ? Icons.expand_less : Icons.expand_more,
+                size: 18,
+                color: const Color(0xffd9cafa),
+              ),
+              onTap: toggle,
+            ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final entries = <(String, IconData)>[
-      if (widget.gateway is AdminWorkspaceGateway)
-        ('overview', Icons.dashboard_outlined),
-      ('users', Icons.people_outline),
-      ('campaigns', Icons.campaign_outlined),
-      ('submissions', Icons.fact_check_outlined),
-      if (widget.gateway is AdminWorkspaceGateway) ...[
-        ('activity', Icons.history),
-        ('reports', Icons.bar_chart_outlined),
-        ('alerts', Icons.notifications_outlined),
-        ('roles', Icons.admin_panel_settings_outlined),
-      ],
-      ('actionControls', Icons.tune),
-      ('coinSettings', Icons.toll_outlined),
-      if (widget.gateway is SupabaseAdminGateway) ...[
-        ('realName', Icons.verified_user_outlined),
-        ('userFeatures', Icons.tune_outlined),
-        ('sendNotifications', Icons.send_outlined),
-        ('updates', Icons.system_update),
-        ('deletedAccounts', Icons.inventory_2_outlined),
-        ('homeSlides', Icons.view_carousel_outlined),
-        ('walletsManagement', Icons.account_balance_wallet_outlined),
-        ('socialLinks', Icons.public),
-        ('operations', Icons.support_agent_outlined),
-      ],
-    ];
+    final short = MediaQuery.sizeOf(context).height < 430;
     return AdminDestinationScaffold(
       destination: AdminDestination.desktop,
       body: Row(
@@ -4763,12 +4888,12 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (menuCollapsed)
+                    if (!short && menuCollapsed)
                       const Padding(
                         padding: EdgeInsets.fromLTRB(8, 26, 8, 24),
                         child: FreelanMark(size: 36),
                       )
-                    else ...[
+                    else if (!short) ...[
                       const Padding(
                         padding: EdgeInsets.fromLTRB(24, 26, 24, 4),
                         child: Column(
@@ -4807,103 +4932,26 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                           horizontal: menuCollapsed ? 8 : 12,
                         ),
                         children: [
-                          for (final entry in entries)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 5),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(13),
-                                  gradient: selected == entry.$1
-                                      ? const LinearGradient(
-                                          colors: [
-                                            Color(0xff873cff),
-                                            Color(0xff4521bf),
-                                          ],
-                                        )
-                                      : null,
-                                  boxShadow: selected == entry.$1
-                                      ? [
-                                          BoxShadow(
-                                            color: const Color(0xff6a34f1)
-                                                .withValues(alpha: .3),
-                                            blurRadius: 16,
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: menuCollapsed
-                                      ? Semantics(
-                                          selected: selected == entry.$1,
-                                          child: IconButton(
-                                            tooltip: entry.$1 == 'userFeatures'
-                                                ? 'User features'
-                                                : entry.$1 == 'homeSlides'
-                                                ? 'Home slideshow'
-                                                : entry.$1 == 'updates'
-                                                ? 'App releases'
-                                                : entry.$1 == 'operations'
-                                                ? 'Users Supports'
-                                                : at(context, entry.$1),
-                                            onPressed: () => select(entry.$1),
-                                            icon: Icon(
-                                              entry.$2,
-                                              size: 20,
-                                              color: selected == entry.$1
-                                                  ? Colors.white
-                                                  : const Color(0xffa6a3bf),
-                                            ),
-                                          ),
-                                        )
-                                      : ListTile(
-                                          dense: true,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          selected: selected == entry.$1,
-                                          selectedTileColor: Colors.transparent,
-                                          leading: Icon(
-                                            entry.$2,
-                                            size: 20,
-                                            color: selected == entry.$1
-                                                ? Colors.white
-                                                : const Color(0xffa6a3bf),
-                                          ),
-                                          title: Text(
-                                            entry.$1 == 'userFeatures'
-                                                ? 'User features'
-                                                : entry.$1 == 'homeSlides'
-                                                ? 'Home slideshow'
-                                                : entry.$1 == 'updates'
-                                                ? 'App releases'
-                                                : entry.$1 == 'operations'
-                                                ? 'Users Supports'
-                                                : at(context, entry.$1),
-                                            style: TextStyle(
-                                              color: selected == entry.$1
-                                                  ? Colors.white
-                                                  : const Color(0xffc4c1d5),
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          onTap: () => select(entry.$1),
-                                        ),
-                                ),
-                              ),
-                            ),
+                          for (final group in _menuGroups)
+                            if (group.$5.any(
+                              (entry) => _available(entry.$1),
+                            )) ...[
+                              _groupHeader(context, group),
+                              if (!_closedGroups.contains(group.$1))
+                                for (final (key, icon) in group.$5)
+                                  if (_available(key))
+                                    _menuEntry(context, key, icon),
+                            ],
                         ],
                       ),
                     ),
-                    const Divider(
-                      color: Color(0xff343147),
-                      indent: 24,
-                      endIndent: 24,
-                    ),
-                    if (menuCollapsed)
+                    if (!short)
+                      const Divider(
+                        color: Color(0xff343147),
+                        indent: 24,
+                        endIndent: 24,
+                      ),
+                    if (!short && menuCollapsed)
                       Padding(
                         padding: const EdgeInsets.all(16),
                         child: Tooltip(
@@ -4917,7 +4965,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                           ),
                         ),
                       )
-                    else
+                    else if (!short)
                       Padding(
                         padding: const EdgeInsets.all(20),
                         child: Row(
@@ -4963,7 +5011,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
             child: Column(
               children: [
                 Container(
-                  height: 96,
+                  height: short ? 56 : 96,
                   padding: const EdgeInsets.symmetric(horizontal: 28),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: .65),
@@ -5005,15 +5053,9 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                       ),
                       Expanded(
                         child: Text(
-                          selected == 'userFeatures'
-                              ? 'User features'
-                              : selected == 'homeSlides'
-                              ? 'Home slideshow'
-                              : selected == 'operations'
-                              ? 'Users Supports'
-                              : selected == 'updates'
-                              ? 'App releases'
-                              : at(context, selected),
+                          _pageLabel(context, selected),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
@@ -5046,6 +5088,47 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _menuEntry(BuildContext context, String key, IconData icon) {
+    final active = selected == key;
+    final label = _pageLabel(context, key);
+    final color = active ? Colors.white : const Color(0xffc4c1d5);
+    return Padding(
+      padding: EdgeInsets.only(left: menuCollapsed ? 0 : 10, bottom: 2),
+      child: Material(
+        color: active ? const Color(0xff6538d6) : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        child: menuCollapsed
+            ? Semantics(
+                selected: active,
+                child: IconButton(
+                  tooltip: label,
+                  onPressed: () => select(key),
+                  icon: Icon(icon, color: color, size: 20),
+                ),
+              )
+            : ListTile(
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                selected: active,
+                selectedTileColor: Colors.transparent,
+                leading: Icon(icon, color: color, size: 20),
+                title: Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onTap: () => select(key),
+              ),
       ),
     );
   }

@@ -201,6 +201,11 @@ class AdminEmptyState extends StatelessWidget {
   );
 }
 
+bool adminWideHeader(BuildContext context) {
+  final size = MediaQuery.sizeOf(context);
+  return size.width >= 1100 && size.height >= 600;
+}
+
 class AdminPageBar extends StatelessWidget implements PreferredSizeWidget {
   const AdminPageBar({
     super.key,

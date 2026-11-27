@@ -458,6 +458,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
       'security': op(context, 'Security', 'സുരക്ഷ'),
     };
     return AdminDestinationScaffold(
+      minBodyHeight: widget.inboxOnly ? 280 : 420,
       destination: switch (page) {
         'tickets' => AdminDestination.tickets,
         'inbox' => AdminDestination.inbox,
@@ -473,7 +474,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
             ? op(context, 'Notifications', 'അറിയിപ്പുകൾ')
             : op(context, 'Admin operations', 'Admin പ്രവർത്തനങ്ങൾ'),
         icon: Icons.settings,
-        desktop: MediaQuery.sizeOf(context).width >= 1100,
+        desktop: adminWideHeader(context),
         subtitle: widget.inboxOnly
             ? null
             : op(
